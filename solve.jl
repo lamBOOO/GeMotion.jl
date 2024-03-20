@@ -2,7 +2,7 @@ using Gridap
 import Random
 Random.seed!(1234)
 
-n = 101
+n = 100
 domain = (0,1,0,1)
 partition = (n,n)
 model = CartesianDiscreteModel(domain,partition)
@@ -49,13 +49,14 @@ dΩ = Measure(Ωₕ,degree)
 # const Re = 1.0
 # const Raa = 1E3
 # const Prr = 0.7
-Raa = 1E3
+Raa = 1E5
 Prr = 0.7
-const g = VectorValue([1,0])
+const g = VectorValue([0,1])
 conv(u,∇u) = (∇u')⋅u
 dconv(du,∇du,u,∇u) = conv(u,∇du)+conv(du,∇u)
 
-a((u,p,T),(v,q,θ)) = ∫( Prr*∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) + ∇(T) ⋅ ∇(θ) - Raa*Prr*(g⋅∇(T))*(g⋅v) )dΩ
+# a((u,p,T),(v,q,θ)) = ∫( Prr*∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) + ∇(T) ⋅ ∇(θ) - Raa*Prr*(g⋅∇(T))*(g⋅v) )dΩ
+a((u,p,T),(v,q,θ)) = ∫( Prr*∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) + ∇(T) ⋅ ∇(θ) - Raa*Prr*(T)*(g⋅v) )dΩ
 
 c(u,v) = ∫( v⊙(conv∘(u,∇(u))) )dΩ
 dc(u,du,v) = ∫( v⊙(dconv∘(du,∇(du),u,∇(u))) )dΩ
@@ -101,8 +102,8 @@ uh, ph, Th = solve(solver,op)
 
 
 # stream function
-reffe_psi = ReferenceFE(lagrangian,Float64,0)
-test_psi = TestFESpace(model,reffe_T,conformity=:H1,dirichlet_tags=["all"])
+reffe_psi = ReferenceFE(lagrangian,Float64,1)
+test_psi = TestFESpace(model,reffe_psi,conformity=:H1,dirichlet_tags=["all"])
 trial_psi = TrialFESpace(test_psi,0.0)
 aa(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ
 bb(v) = ∫( v * (∇(uh) ⊙ TensorValue(0,-1,1,0)) )*dΩ
@@ -114,3 +115,89 @@ psih = solve(solver,op)
 
 
 writevtk(Ωₕ,"ins-results",cellfields=["uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih])
+
+
+# plot
+using CairoMakie
+using MakieTeX
+f = Figure(
+  size = (500, 500)
+  ,figure_padding = (0, 10, 0, 0)
+)
+Axis(
+  f[1, 1]
+  ,aspect=1
+  ,title="stream function ψ"
+  ,xlabel="x"
+  ,ylabel="y"
+  ,xminorticksvisible = true
+  ,yminorticksvisible = true
+  ,xticks = LinearTicks(6)
+  ,yticks = LinearTicks(6)
+  ,limits = (0, 1, 0, 1)
+)
+
+xs = LinRange(0, 1, n)
+ys = LinRange(0, 1, n)
+
+using Gridap.CellData
+using Gridap.Arrays
+search_method = KDTreeSearch(num_nearest_vertices=5)
+
+psihi = Interpolable(psih; searchmethod=search_method)
+const cache5 = return_cache(psihi, Gridap.Point(0.0, 0.0))
+function helper4(x)
+  return evaluate!(cache5, psihi, Gridap.Point(x))
+end
+zs = [helper4([x,y]) for x in xs, y in ys]
+
+# zs = [psih(VectorValue([x,y])) for x in xs, y in ys]
+
+contour!(xs, ys, zs
+  ,levels=vcat([1,5,10,13],-[1,5,10,13])
+  ,labels=true
+  # , transparancy = true
+  ,labelsize = 15
+  # ,labelfont = :bold
+  # ,colormap=:grays
+  ,color=:black
+  # ,labelcolor=:black
+)
+save("./streamfunction.pdf", f)
+@show f
+
+Thi = Interpolable(Th; searchmethod=search_method)
+const cache6 = return_cache(Thi, Gridap.Point(0.0, 0.0))
+function helper5(x)
+  return evaluate!(cache6, Thi, Gridap.Point(x))
+end
+zs = [helper5([x,y]) for x in xs, y in ys]
+
+f = Figure(
+  size = (500, 500)
+  ,figure_padding = (0, 10, 0, 0)
+)
+Axis(
+  f[1, 1]
+  ,aspect=1
+  ,title="temperature θ"
+  ,xlabel="x"
+  ,ylabel="y"
+  ,xminorticksvisible = true
+  ,yminorticksvisible = true
+  ,xticks = LinearTicks(6)
+  ,yticks = LinearTicks(6)
+  ,limits = (0, 1, 0, 1)
+)
+contour!(xs, ys, zs
+  ,levels=[i*0.1 for i=1:10]
+  ,labels=true
+  # , transparancy = true
+  ,labelsize = 15
+  # ,labelfont = :bold
+  # ,colormap=:grays
+  ,color=:black
+  # ,labelcolor=:black
+)
+save("./temperature.pdf", f)
+@show f
