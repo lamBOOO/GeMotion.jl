@@ -88,7 +88,7 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
   solver = LinearFESolver(ls)
   psih = solve(solver,op)
 
-  writevtk(Ωₕ,"ins-results",cellfields=["uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih])
+  writevtk(Ωₕ,"results_$(Ra)_$(Pr)",cellfields=["uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih])
 
   # plotting
   xs = LinRange(0, 1, n)
@@ -117,8 +117,6 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
     return evaluate!(cache_psi, psihi, Gridap.Point(x))
   end
   zs = [helper_psi([x,y]) for x in xs, y in ys]
-
-  @info xs,ys,zs
 
   contour!(xs, ys, zs
     ,levels=levels.psi
@@ -159,13 +157,15 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
   save("./temperature_$(Ra)_$(Pr).pdf", f)
 end
 
-simulate2(Pr=0.7, Ra=1E3, levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
+# simulate2(Pr=0.7, Ra=1E3, levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
 
 cases=
 [
   [0.7, 1E3, (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
   [0.7, 5*1E3, (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
   [0.7, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+  [0.1, 1E5, (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+  [1.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
   [10.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
 ]
 
