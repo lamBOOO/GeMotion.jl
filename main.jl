@@ -3,10 +3,12 @@ using Gridap.CellData
 using Gridap.Arrays
 using CairoMakie
 using MakieTeX
-using LineSearches: BackTracking
+using LineSearches: BackTracking, StrongWolfe
 
-function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
-  n = 100
+function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(;psi=5))
+  @info Pr, Ra, bc
+
+  n = 40
   domain = (0,1,0,1)
   partition = (n,n)
   model = CartesianDiscreteModel(domain,partition)
@@ -40,9 +42,18 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
 
   u_noslip = VectorValue(0,0)  # noslip
   wave(x) = sin(pi*x[1])
+
+  if bc == :one
+    bc_fun = 1.0
+  elseif  bc == :wave
+    bc_fun = wave
+  else
+    error("bc not supported")
+  end
+
   U = TrialFESpace(V,u_noslip)
   P = TrialFESpace(Q)
-  T = TrialFESpace(Θ,[1.0,0.0,0.0,0.5,0.5])
+  T = TrialFESpace(Θ,[bc_fun,0.0,0.0,0.5,0.5])
 
   Y = MultiFieldFESpace([V, Q, Θ])
   X = MultiFieldFESpace([U, P, T])
@@ -71,7 +82,10 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
   op = FEOperator(res,jac,X,Y)
 
   nls = NLSolver(
-    show_trace=true, method=:newton, linesearch=BackTracking()
+    show_trace=true, method=:newton
+    # , beta=0.1
+    , linesearch=linesearch
+    # , linesearch=StrongWolfe()
     , ftol=1E-15
     , xtol=1E-10
     )
@@ -89,7 +103,7 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
   solver = LinearFESolver(ls)
   psih = solve(solver,op)
 
-  writevtk(Ωₕ,"results_$(Ra)_$(Pr)",cellfields=["uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih])
+  writevtk(Ωₕ,"results_$(Ra)_$(Pr)_$(bc).vtu",cellfields=["uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih])
 
   # plotting
   xs = LinRange(0, 1, n)
@@ -125,7 +139,7 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
     ,labelsize = 15
     ,color=:black
   )
-  save("./streamfunction_$(Ra)_$(Pr).pdf", f)
+  save("./streamfunction_$(Ra)_$(Pr)_$(bc).pdf", f)
 
   Thi = Interpolable(Th; searchmethod=search_method)
   cache_T = return_cache(Thi, Gridap.Point(0.0, 0.0))
@@ -155,7 +169,12 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
     ,labelsize = 15
     ,color=:black
   )
-  save("./temperature_$(Ra)_$(Pr).pdf", f)
+  save("./temperature_$(Ra)_$(Pr)_$(bc).pdf", f)
+
+  # Nusselt number
+  # TODO: Add left wall
+  nb = get_normal_vector(btrian)
+  Nu = Interpolable((∇(Th) ⋅ nb); searchmethod = KDTreeSearch(num_nearest_vertices=5))
 
   # entropies
   Sth = interpolate(
@@ -166,7 +185,7 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
     +
     ((inner(x,TensorValue(0,1,1,0))) |> x->x*x)
   ), TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1))
-  writevtk(Ωₕ,"entropy",cellfields=["Sth"=>Sth, "Sfl" => Sfl])
+  writevtk(Ωₕ,"entropy_$(Ra)_$(Pr)_$(bc).vtu",cellfields=["Sth"=>Sth, "Sfl" => Sfl])
 
   n = 100
   xs = LinRange(0, 1, n)
@@ -199,7 +218,7 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
     ,labelsize = 15
     ,color=:black
   )
-  save("./entropy_heat_$(Ra)_$(Pr).pdf", f)
+  save("./entropy_heat_$(Ra)_$(Pr)_$(bc).pdf", f)
 
   f = Figure(
     size = (500, 500)
@@ -228,90 +247,88 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
     ,labelformatter=formatter
     ,color=:black
   )
-  save("./entropy_fluid_$(Ra)_$(Pr).pdf", f)
+  save("./entropy_fluid_$(Ra)_$(Pr)_$(bc).pdf", f)
 
-  return (uh=uh, ph=ph, Th=Th, psih=psih, btrian=btrian, model=model, Ωₕ=Ωₕ)
+  return (uh=uh, ph=ph, Th=Th, psih=psih, Nu=Nu, Sth=Sth, Sfl=Sfl, btrian=btrian, model=model, Ωₕ=Ωₕ, Pr=Pr, Ra=Ra)
 end
 
-out = simulate2(Pr=0.015, Ra=1E3, levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
+out = simulate2(Pr=10, Ra=1E5, bc=:wave, linesearch=StrongWolfe(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
 
-# cases=
-# [
-#   [0.7, 1E3, (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-#   [0.7, 5*1E3, (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-#   [0.7, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-#   [0.1, 1E5, (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-#   [1.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [10.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-# ]
+cases=
+[
+  [0.7, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+  [0.7, 5*1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
+  [0.7, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+  [0.1, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+  [1.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+  [10.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+  [0.015, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+  [0.7, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+  [0.7, 5*1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
+  [0.7, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+  [0.1, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+  [1.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+  [10.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+  [0.015, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+]
 
-# for case in cases
-#   simulate2(Pr=case[1], Ra=case[2], levels=case[3])
-# end
+outs = []
+for case in cases
+  out = simulate2(Pr=case[1], Ra=case[2], bc=case[3], linesearch=case[4], levels=case[5])
+  push!(outs, out)
+end
 
 
-# # Nusselt number
-# nb = get_normal_vector(out.btrian)
-
-# search_method = KDTreeSearch(num_nearest_vertices=5)
-# Thi = Interpolable((∇(out.Th) ⋅ nb)*(∇(out.Th) ⋅ nb); searchmethod=search_method)
-# cache_T = return_cache(Thi, Gridap.Point(0.0, 0.0))
-# function helper_T(x)
-#   return evaluate!(cache_T, Thi, Gridap.Point(x))
-# end
-# helper_T([0.,0])
-# # ∇(u)⋅nb
-
-# nn = 100
-# xs = 0 |> x->LinRange(0+x, 1-x, nn)
-# ys = [helper_T([x,0]) for x in xs]
-# begin
-# f = Figure(
-#   # size = (500, 500)
-#   figure_padding = (0, 10, 0, 0)
+# Nusselt number
+begin
+begin
+nn = 100
+xs = 0 |> x->LinRange(0+x, 1-x, nn)
+# update_theme!(
+#   palette = (color=Makie.wong_colors(), marker = [:circle, :xcross, :pentagon, :diamond],),
+#   ScatterLines = (cycle = Cycle([:color, :marker], covary = true),)
 # )
-# Axis(
-#   f[1, 1]
-#   ,aspect=300/180
-#   ,title="local Nusselt number Nu, bottom wall"
-#   ,xlabel="x"
-#   ,ylabel="y"
-#   ,xminorticksvisible = true
-#   ,yminorticksvisible = true
-#   ,xticks = LinearTicks(5)
-#   ,yticks = LinearTicks(3)
-#   ,limits = ((0.1, 0.9), (0,15))
-# )
-# lines!(xs,ys,ticks = LinearTicks(8)); f
-# # save("./nusselt.pdf", f)
-# f
-# end
+update_theme!(
+  palette = (color=Makie.wong_colors(), marker = [:circle, :xcross, :pentagon, :diamond],),
+  Lines = (cycle = Cycle([:color, :marker], covary = true),)
+)
+f = Figure(
+  # size = (500, 500)
+  figure_padding = (0, 10, 0, 0)
+)
+ax = Axis(
+  f[1, 1]
+  ,aspect=300/180
+  ,title="local Nusselt number Nu, bottom wall"
+  ,xlabel="x"
+  ,ylabel="y"
+  ,xminorticksvisible = true
+  ,yminorticksvisible = true
+  ,xticks = LinearTicks(5)
+  ,yticks = LinearTicks(3)
+  ,limits = ((0.1, 0.9), (0,15))
+)
 
-
-
-
-
-
-
-
-
-## old code:
-# # initial guess nonzero
-# import Random
-# Random.seed!(1234)
-# xu = rand(Float64,num_free_dofs(U))
-# # uh0 = FEFunction(U,xu)
-
-# xp = rand(Float64,num_free_dofs(P))
-# # ph0 = FEFunction(P,xp)
-
-# xT = rand(Float64,num_free_dofs(T))
-# # Th0 = FEFunction(T,xT)
-
-# init_guess = FEFunction(X, vcat(xu,xp,xT))
-
-# out = solve!(init_guess,solver,op)
-
-# uh = out[1][1]
-# ph = out[1][2]
-# Th = out[1][3]
+map(outs[[1,3,6]]) do o
+  cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
+  lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x,0])) for x in xs]
+    ,ticks = LinearTicks(8)
+    # ,color = :black
+    ,label = "Pr=$(o.Pr), Ra=$(o.Ra)"
+  )
+end
+map(outs[[8,10,13]]) do o
+  cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
+  lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x,0])) for x in xs]
+    ,ticks = LinearTicks(8)
+    # ,color = :black
+    ,label = "Pr=$(o.Pr), Ra=$(o.Ra)"
+    ,linestyle=:dash
+  )
+end
+axislegend(labelsize=10)
+save("./nusselt_bot.pdf", f)
+f
+end
+end
+1+1
