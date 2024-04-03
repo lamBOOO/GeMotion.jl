@@ -10,6 +10,7 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
   domain = (0,1,0,1)
   partition = (n,n)
   model = CartesianDiscreteModel(domain,partition)
+  btrian = BoundaryTriangulation(model)
 
   # labelling:
   # 1-2-3-4 = botleftpoint-botrightpoint-topleftpoint-toprightpoint
@@ -155,23 +156,138 @@ function simulate2(;Pr=1.0, Ra=1.0, levels=(;psi=5))
     ,color=:black
   )
   save("./temperature_$(Ra)_$(Pr).pdf", f)
+
+  # entropies
+  Sth = interpolate(
+    ∇(Th) |> x->inner(x,x)
+  , TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1))
+  Sfl = interpolate(∇(uh) |> x->1E-4 *(
+    2*(inner(x .* x,TensorValue(1,0,0,1)))
+    +
+    ((inner(x,TensorValue(0,1,1,0))) |> x->x*x)
+  ), TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1))
+  writevtk(Ωₕ,"entropy",cellfields=["Sth"=>Sth, "Sfl" => Sfl])
+
+  n = 100
+  xs = LinRange(0, 1, n)
+  ys = LinRange(0, 1, n)
+
+  cache_Sth = return_cache(Sth, Gridap.Point(0.0, 0.0))
+  cache_Sfl = return_cache(Sfl, Gridap.Point(0.0, 0.0))
+  z_Sfl = [evaluate!(cache_Sfl, Sfl, Gridap.Point([x,y])) for x in xs, y in ys]
+  z_Sth = [evaluate!(cache_Sth, Sth, Gridap.Point([x,y])) for x in xs, y in ys]
+
+  f = Figure(
+    size = (500, 500)
+    ,figure_padding = (0, 10, 0, 0)
+  )
+  Axis(
+    f[1, 1]
+    ,aspect=1
+    ,title="local heat entropy S_θ"
+    ,xlabel="x"
+    ,ylabel="y"
+    ,xminorticksvisible = true
+    ,yminorticksvisible = true
+    ,xticks = LinearTicks(6)
+    ,yticks = LinearTicks(6)
+    ,limits = (0, 1, 0, 1)
+  )
+  contour!(xs, ys, z_Sth
+    ,levels=vcat(1:1:7, 10:5:30, 0.01,0.1,0.5,0.25)
+    ,labels=true
+    ,labelsize = 15
+    ,color=:black
+  )
+  save("./entropy_heat_$(Ra)_$(Pr).pdf", f)
+
+  f = Figure(
+    size = (500, 500)
+    ,figure_padding = (0, 10, 0, 0)
+  )
+  Axis(
+    f[1, 1]
+    ,aspect=1
+    ,title="local fluid entropy S_ψ"
+    ,xlabel="x"
+    ,ylabel="y"
+    ,xminorticksvisible = true
+    ,yminorticksvisible = true
+    ,xticks = LinearTicks(6)
+    ,yticks = LinearTicks(6)
+    ,limits = (0, 1, 0, 1)
+  )
+  function formatter(level::Real)::String
+      lev_short = round(level; digits = 3)
+      string(isinteger(lev_short) ? round(Int, lev_short) : lev_short)
+  end
+  contour!(xs, ys, z_Sfl
+    ,levels=vcat(0.005:0.005:0.05)
+    ,labels=true
+    ,labelsize = 15
+    ,labelformatter=formatter
+    ,color=:black
+  )
+  save("./entropy_fluid_$(Ra)_$(Pr).pdf", f)
+
+  return (uh=uh, ph=ph, Th=Th, psih=psih, btrian=btrian, model=model, Ωₕ=Ωₕ)
 end
 
-# simulate2(Pr=0.7, Ra=1E3, levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
+out = simulate2(Pr=0.015, Ra=1E3, levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
 
-cases=
-[
-  [0.7, 1E3, (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-  [0.7, 5*1E3, (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-  [0.7, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-  [0.1, 1E5, (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-  [1.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-  [10.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-]
+# cases=
+# [
+#   [0.7, 1E3, (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 5*1E3, (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
+#   [0.7, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+#   [0.1, 1E5, (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+#   [1.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [10.0, 1E5, (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+# ]
 
-for case in cases
-  simulate2(Pr=case[1], Ra=case[2], levels=case[3])
-end
+# for case in cases
+#   simulate2(Pr=case[1], Ra=case[2], levels=case[3])
+# end
+
+
+# # Nusselt number
+# nb = get_normal_vector(out.btrian)
+
+# search_method = KDTreeSearch(num_nearest_vertices=5)
+# Thi = Interpolable((∇(out.Th) ⋅ nb)*(∇(out.Th) ⋅ nb); searchmethod=search_method)
+# cache_T = return_cache(Thi, Gridap.Point(0.0, 0.0))
+# function helper_T(x)
+#   return evaluate!(cache_T, Thi, Gridap.Point(x))
+# end
+# helper_T([0.,0])
+# # ∇(u)⋅nb
+
+# nn = 100
+# xs = 0 |> x->LinRange(0+x, 1-x, nn)
+# ys = [helper_T([x,0]) for x in xs]
+# begin
+# f = Figure(
+#   # size = (500, 500)
+#   figure_padding = (0, 10, 0, 0)
+# )
+# Axis(
+#   f[1, 1]
+#   ,aspect=300/180
+#   ,title="local Nusselt number Nu, bottom wall"
+#   ,xlabel="x"
+#   ,ylabel="y"
+#   ,xminorticksvisible = true
+#   ,yminorticksvisible = true
+#   ,xticks = LinearTicks(5)
+#   ,yticks = LinearTicks(3)
+#   ,limits = ((0.1, 0.9), (0,15))
+# )
+# lines!(xs,ys,ticks = LinearTicks(8)); f
+# # save("./nusselt.pdf", f)
+# f
+# end
+
+
 
 
 
