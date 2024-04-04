@@ -5,6 +5,9 @@ using CairoMakie
 using MakieTeX
 using LineSearches: BackTracking, StrongWolfe
 
+using Random
+Random.seed!(1234)
+
 function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(;psi=5))
   @info Pr, Ra, bc
 
@@ -38,7 +41,7 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   reffeₚ = ReferenceFE(lagrangian,Float64,order-1;space=:P)
   Q = TestFESpace(model,reffeₚ,conformity=:L2,constraint=:zeromean)
 
-  Θ = TestFESpace(model,reffe_T,conformity=:H1,dirichlet_tags=["botline", "leftline", "rightline", "botleftpoint", "botrightpoint"])
+  Θ = TestFESpace(model,reffe_T,conformity=:H1,dirichlet_tags=["leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint", "toprightpoint"])
 
   u_noslip = VectorValue(0,0)  # noslip
   wave(x) = sin(pi*x[1])
@@ -53,7 +56,7 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
 
   U = TrialFESpace(V,u_noslip)
   P = TrialFESpace(Q)
-  T = TrialFESpace(Θ,[bc_fun,0.0,0.0,0.5,0.5])
+  T = TrialFESpace(Θ,[0.0,bc_fun,0.0,1.0,0.0,1.0])
 
   Y = MultiFieldFESpace([V, Q, Θ])
   X = MultiFieldFESpace([U, P, T])
@@ -64,11 +67,25 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
 
   # Ra = 1E5
   # Pr = 0.7
+  nμ = 1.8
   g = VectorValue([0,1])
+
+  γ = 1E-3 # influences convergence of Newton and avoids singularities
+
+  D(∇u) = 1/2 * (∇u + ∇u')
+  μ(∇u,n) = (x->x^((n-1)/2)) ∘ (γ + 2*(D(∇u) ⊙ D(∇u)))
+  dμ(∇u,d∇u,n) = ((n-1)/2) * ((x->x^((n-3)/2)) ∘ (γ + 2*(D(∇u) ⊙ D(∇u)))) * 4 *(D(∇u) ⊙ D(d∇u))
+
   conv(u,∇u) = (∇u')⋅u
   dconv(du,∇du,u,∇u) = conv(u,∇du)+conv(du,∇u)
 
-  a((u,p,T),(v,q,θ)) = ∫( Pr*∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) + ∇(T) ⋅ ∇(θ) - Ra*Pr*(T)*(g⋅v) )dΩ
+  a((u,p,T),(v,q,θ)) = ∫(
+    0 * Pr*∇(v)⊙∇(u)
+    - (∇⋅v)*p + q*(∇⋅u) + ∇(T) ⋅ ∇(θ) - Ra*Pr*(T)*(g⋅v)
+  )dΩ
+
+  b(u,v) = ∫( 2*Pr*μ(∇(u),nμ)*D(∇(v))⊙D(∇(u)) )dΩ
+  db(u,du,v) = ∫( 2*Pr*dμ(∇(u),∇(du),nμ)*D(∇(u))⊙D(∇(v)) + 2*Pr*μ(∇(u),nμ)*D(∇(du))⊙D(∇(v)) )dΩ  # TODO: Simplify
 
   c(u,v) = ∫( v⊙(conv∘(u,∇(u))) )dΩ
   dc(u,du,v) = ∫( v⊙(dconv∘(du,∇(du),u,∇(u))) )dΩ
@@ -76,8 +93,16 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   d(u,T,θ) = ∫( (u ⋅ ∇(T))*θ )dΩ
   dd(u,du,T,dT,θ) = ∫( ((du ⋅ ∇(T))*θ + (u ⋅ ∇(dT))*θ) )dΩ
 
-  res((u,p,T),(v,q,θ)) = a((u,p,T),(v,q,θ)) + c(u,v) + d(u,T,θ)
-  jac((u,p,T),(du,dp,dT),(v,q,θ)) = a((du,dp,dT),(v,q,θ)) + dc(u,du,v) + dd(u,du,T,dT,θ)
+  res((u,p,T),(v,q,θ)) = (
+    a((u,p,T),(v,q,θ))
+    + b(u,v)
+    + c(u,v) + d(u,T,θ)
+  )
+  jac((u,p,T),(du,dp,dT),(v,q,θ)) = (
+    a((du,dp,dT),(v,q,θ))
+    + db(u,du,v)
+    + dc(u,du,v) + dd(u,du,T,dT,θ)
+  )
 
   op = FEOperator(res,jac,X,Y)
 
@@ -87,9 +112,23 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
     , linesearch=linesearch
     # , linesearch=StrongWolfe()
     , ftol=1E-15
-    , xtol=1E-10
+    , xtol=1E-20
     )
   solver = FESolver(nls)
+
+
+  # xu = rand(Float64,num_free_dofs(U))
+  # # uh0 = FEFunction(U,xu)
+  # xp = rand(Float64,num_free_dofs(P))
+  # # ph0 = FEFunction(P,xp)
+  # xT = rand(Float64,num_free_dofs(T))
+  # # Th0 = FEFunction(T,xT)
+  # init_guess = FEFunction(X, vcat(xu,xp,xT))
+  # out = solve!(init_guess,solver,op)
+  # uh = out[1][1]
+  # ph = out[1][2]
+  # Th = out[1][3]
+
   uh, ph, Th = solve(solver,op)
 
   # stream function
@@ -132,6 +171,7 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
     return evaluate!(cache_psi, psihi, Gridap.Point(x))
   end
   zs = [helper_psi([x,y]) for x in xs, y in ys]
+  @info findmax(zs)
 
   contour!(xs, ys, zs
     ,levels=levels.psi
@@ -179,7 +219,8 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   # entropies
   Sth = interpolate(
     ∇(Th) |> x->inner(x,x)
-  , TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1))
+  , TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
+  )
   Sfl = interpolate(∇(uh) |> x->1E-4 *(
     2*(inner(x .* x,TensorValue(1,0,0,1)))
     +
@@ -213,7 +254,8 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
     ,limits = (0, 1, 0, 1)
   )
   contour!(xs, ys, z_Sth
-    ,levels=vcat(1:1:7, 10:5:30, 0.01,0.1,0.5,0.25)
+  # ,levels=vcat(1:1:7, 10:5:30, 0.01,0.1,0.5,0.25)
+    ,levels=10
     ,labels=true
     ,labelsize = 15
     ,color=:black
@@ -241,7 +283,8 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
       string(isinteger(lev_short) ? round(Int, lev_short) : lev_short)
   end
   contour!(xs, ys, z_Sfl
-    ,levels=vcat(0.005:0.005:0.05)
+    # ,levels=vcat(0.005:0.005:0.05)
+    ,levels=10
     ,labels=true
     ,labelsize = 15
     ,labelformatter=formatter
@@ -252,83 +295,105 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   return (uh=uh, ph=ph, Th=Th, psih=psih, Nu=Nu, Sth=Sth, Sfl=Sfl, btrian=btrian, model=model, Ωₕ=Ωₕ, Pr=Pr, Ra=Ra)
 end
 
-out = simulate2(Pr=10, Ra=1E5, bc=:wave, linesearch=StrongWolfe(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
-
-cases=
-[
-  [0.7, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-  [0.7, 5*1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-  [0.7, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-  [0.1, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-  [1.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-  [10.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-  [0.015, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-  [0.7, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-  [0.7, 5*1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-  [0.7, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-  [0.1, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-  [1.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-  [10.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-  [0.015, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-]
-
-outs = []
-for case in cases
-  out = simulate2(Pr=case[1], Ra=case[2], bc=case[3], linesearch=case[4], levels=case[5])
-  push!(outs, out)
-end
+# out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=0.1:0.2:1.1]))
+# out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=1:2:13]))
+out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=vcat([i for i=0.5:1.0:4.5],[5.0])))
 
 
-# Nusselt number
-begin
-begin
-nn = 100
-xs = 0 |> x->LinRange(0+x, 1-x, nn)
+# cases=
+# [
+#   [0.7, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 5*1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
+#   [0.7, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+#   [0.1, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+#   [1.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [10.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [0.015, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 5*1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
+#   [0.7, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+#   [0.1, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+#   [1.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [10.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [0.015, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+# ]
+
+# outs = []
+# for case in cases
+#   out = simulate2(Pr=case[1], Ra=case[2], bc=case[3], linesearch=case[4], levels=case[5])
+#   push!(outs, out)
+# end
+
+
+# # Nusselt number
+# begin
+# begin
+# nn = 100
+# xs = 0 |> x->LinRange(0+x, 1-x, nn)
+# # update_theme!(
+# #   palette = (color=Makie.wong_colors(), marker = [:circle, :xcross, :pentagon, :diamond],),
+# #   ScatterLines = (cycle = Cycle([:color, :marker], covary = true),)
+# # )
 # update_theme!(
 #   palette = (color=Makie.wong_colors(), marker = [:circle, :xcross, :pentagon, :diamond],),
-#   ScatterLines = (cycle = Cycle([:color, :marker], covary = true),)
+#   Lines = (cycle = Cycle([:color, :marker], covary = true),)
 # )
-update_theme!(
-  palette = (color=Makie.wong_colors(), marker = [:circle, :xcross, :pentagon, :diamond],),
-  Lines = (cycle = Cycle([:color, :marker], covary = true),)
-)
-f = Figure(
-  # size = (500, 500)
-  figure_padding = (0, 10, 0, 0)
-)
-ax = Axis(
-  f[1, 1]
-  ,aspect=300/180
-  ,title="local Nusselt number Nu, bottom wall"
-  ,xlabel="x"
-  ,ylabel="y"
-  ,xminorticksvisible = true
-  ,yminorticksvisible = true
-  ,xticks = LinearTicks(5)
-  ,yticks = LinearTicks(3)
-  ,limits = ((0.1, 0.9), (0,15))
-)
+# f = Figure(
+#   # size = (500, 500)
+#   figure_padding = (0, 10, 0, 0)
+# )
+# ax = Axis(
+#   f[1, 1]
+#   ,aspect=300/180
+#   ,title="local Nusselt number Nu, bottom wall"
+#   ,xlabel="x"
+#   ,ylabel="y"
+#   ,xminorticksvisible = true
+#   ,yminorticksvisible = true
+#   ,xticks = LinearTicks(5)
+#   ,yticks = LinearTicks(3)
+#   ,limits = ((0.1, 0.9), (0,15))
+# )
 
-map(outs[[1,3,6]]) do o
-  cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-  lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x,0])) for x in xs]
-    ,ticks = LinearTicks(8)
-    # ,color = :black
-    ,label = "Pr=$(o.Pr), Ra=$(o.Ra)"
-  )
-end
-map(outs[[8,10,13]]) do o
-  cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-  lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x,0])) for x in xs]
-    ,ticks = LinearTicks(8)
-    # ,color = :black
-    ,label = "Pr=$(o.Pr), Ra=$(o.Ra)"
-    ,linestyle=:dash
-  )
-end
-axislegend(labelsize=10)
-save("./nusselt_bot.pdf", f)
-f
-end
-end
-1+1
+# map(outs[[1,3,6]]) do o
+#   cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
+#   lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x,0])) for x in xs]
+#     ,ticks = LinearTicks(8)
+#     # ,color = :black
+#     ,label = "Pr=$(o.Pr), Ra=$(o.Ra)"
+#   )
+# end
+# map(outs[[8,10,13]]) do o
+#   cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
+#   lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x,0])) for x in xs]
+#     ,ticks = LinearTicks(8)
+#     # ,color = :black
+#     ,label = "Pr=$(o.Pr), Ra=$(o.Ra)"
+#     ,linestyle=:dash
+#   )
+# end
+# axislegend(labelsize=10)
+# save("./nusselt_bot.pdf", f)
+# f
+# end
+# end
+# 1+1
+
+
+
+
+
+
+
+
+
+
+# # OLD
+# power(x,n) = x^((n-1)/2)
+# D(∇u) = 1//2 * (∇u + ∇u')
+
+# test = interpolate(
+#   ∇(out.uh) |> x-> (x->power(x,0.1)) ∘ (2 * (D(x) ⊙ D(x)))
+# , TestFESpace(out.model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
+# )
+# writevtk(out.Ωₕ,"test.vtu",cellfields=["test"=>test])
