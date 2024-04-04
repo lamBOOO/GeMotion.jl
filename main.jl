@@ -8,7 +8,7 @@ using LineSearches: BackTracking, StrongWolfe
 using Random
 Random.seed!(1234)
 
-function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(;psi=5))
+function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), levels=(;psi=5))
   @info Pr, Ra, bc
 
   n_elems = 10
@@ -70,7 +70,6 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
 
   # Ra = 1E5
   # Pr = 0.7
-  nμ = 1.8
   g = VectorValue([0,1])
 
   γ = 1E-3 # influences convergence of Newton and avoids singularities
@@ -87,9 +86,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
     - (∇⋅v)*p + q*(∇⋅u) + ∇(T) ⋅ ∇(θ) - Ra*Pr*(T)*(g⋅v)
   )dΩ
 
-  b(u,v) = ∫( 2*Pr*μ(∇(u),nμ)*D(∇(v))⊙D(∇(u)) )dΩ
+  b(u,v) = ∫( 2*Pr*μ(∇(u),n)*D(∇(v))⊙D(∇(u)) )dΩ
   db(u,du,v) = ∫(
-    2*Pr*(dμ(∇(u),∇(du),nμ)*D(∇(u)) + μ(∇(u),nμ)*D(∇(du))) ⊙ D(∇(v))
+    2*Pr*(dμ(∇(u),∇(du),n)*D(∇(u)) + μ(∇(u),n)*D(∇(du))) ⊙ D(∇(v))
   )dΩ
 
   c(u,v) = ∫( v⊙(conv∘(u,∇(u))) )dΩ
@@ -129,10 +128,10 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   # xT = rand(Float64,num_free_dofs(T))
   # # Th0 = FEFunction(T,xT)
   # init_guess = FEFunction(X, vcat(xu,xp,xT))
-  # out = solve!(init_guess,solver,op)
-  # uh = out[1][1]
-  # ph = out[1][2]
-  # Th = out[1][3]
+  # result = solve!(init_guess,solver,op)
+  # uh = result[1][1]
+  # ph = result[1][2]
+  # Th = result[1][3]
 
   # zero initial guess
   uh, ph, Th = solve(solver,op)
@@ -307,32 +306,34 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   return (uh=uh, ph=ph, Th=Th, psih=psih, Nu=Nu, Sth=Sth, Sfl=Sfl, btrian=btrian, model=model, Ωₕ=Ωₕ, Pr=Pr, Ra=Ra)
 end
 
-out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=0.1:0.2:1.1]))
-# out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=1:2:13]))
-# out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=vcat([i for i=0.5:1.0:4.5],[5.0])))
+# out = simulate2(Pr=0.7, Ra=1E3, n=1.0, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
+
+# out = simulate2(Pr=1E3, Ra=1E4, n=1.8, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=0.1:0.2:1.1]))
+out = simulate2(Pr=1E3, Ra=1E4, n=0.6, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=1:2:13]))
+# out = simulate2(Pr=1E3, Ra=1E4, n=1.0, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=vcat([i for i=0.5:1.0:4.5],[5.0])))
 
 
 # cases=
 # [
-#   [0.7, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-#   [0.7, 5*1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-#   [0.7, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-#   [0.1, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-#   [1.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [10.0, 1E5, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [0.015, 1E3, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-#   [0.7, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-#   [0.7, 5*1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-#   [0.7, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-#   [0.1, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-#   [1.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [10.0, 1E5, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [0.015, 1E3, :wave, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 1E3, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 5*1E3, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
+#   [0.7, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+#   [0.1, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+#   [1.0, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [10.0, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [0.015, 1E3, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 1E3, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
+#   [0.7, 5*1E3, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
+#   [0.7, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
+#   [0.1, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
+#   [1.0, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [10.0, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
+#   [0.015, 1E3, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
 # ]
 
 # outs = []
 # for case in cases
-#   out = simulate2(Pr=case[1], Ra=case[2], bc=case[3], linesearch=case[4], levels=case[5])
+#   out = simulate2(Pr=case[1], Ra=case[2], n=case[3], bc=case[4], linesearch=case[5], levels=case[6])
 #   push!(outs, out)
 # end
 
