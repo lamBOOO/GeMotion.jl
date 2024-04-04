@@ -41,7 +41,10 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   reffeₚ = ReferenceFE(lagrangian,Float64,order-1;space=:P)
   Q = TestFESpace(model,reffeₚ,conformity=:L2,constraint=:zeromean)
 
-  Θ = TestFESpace(model,reffe_T,conformity=:H1,dirichlet_tags=["leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint", "toprightpoint"])
+  Θ = TestFESpace(model,reffe_T,conformity=:H1,dirichlet_tags=[
+    "leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint",
+    "toprightpoint"
+  ])
 
   u_noslip = VectorValue(0,0)  # noslip
   wave(x) = sin(pi*x[1])
@@ -74,7 +77,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
 
   D(∇u) = 1/2 * (∇u + ∇u')
   μ(∇u,n) = (x->x^((n-1)/2)) ∘ (γ + 2*(D(∇u) ⊙ D(∇u)))
-  dμ(∇u,d∇u,n) = ((n-1)/2) * ((x->x^((n-3)/2)) ∘ (γ + 2*(D(∇u) ⊙ D(∇u)))) * 4 *(D(∇u) ⊙ D(d∇u))
+  dμ(∇u,d∇u,n) = ((n-1)/2) * (
+    (x->x^((n-3)/2)) ∘ (γ + 2*(D(∇u) ⊙ D(∇u)))
+  ) * 4 *(D(∇u) ⊙ D(d∇u))
 
   conv(u,∇u) = (∇u')⋅u
   dconv(du,∇du,u,∇u) = conv(u,∇du)+conv(du,∇u)
@@ -85,7 +90,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   )dΩ
 
   b(u,v) = ∫( 2*Pr*μ(∇(u),nμ)*D(∇(v))⊙D(∇(u)) )dΩ
-  db(u,du,v) = ∫( 2*Pr*dμ(∇(u),∇(du),nμ)*D(∇(u))⊙D(∇(v)) + 2*Pr*μ(∇(u),nμ)*D(∇(du))⊙D(∇(v)) )dΩ  # TODO: Simplify
+  db(u,du,v) = ∫(
+    2*Pr*(dμ(∇(u),∇(du),nμ)*D(∇(u))⊙D(∇(v)) + μ(∇(u),nμ)*D(∇(du)))
+  )dΩ
 
   c(u,v) = ∫( v⊙(conv∘(u,∇(u))) )dΩ
   dc(u,du,v) = ∫( v⊙(dconv∘(du,∇(du),u,∇(u))) )dΩ
@@ -142,7 +149,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   solver = LinearFESolver(ls)
   psih = solve(solver,op)
 
-  writevtk(Ωₕ,"results_$(Ra)_$(Pr)_$(bc).vtu",cellfields=["uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih])
+  writevtk(Ωₕ,"results_$(Ra)_$(Pr)_$(bc).vtu",cellfields=[
+    "uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih
+  ])
 
   # plotting
   xs = LinRange(0, 1, n)
@@ -214,7 +223,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   # Nusselt number
   # TODO: Add left wall
   nb = get_normal_vector(btrian)
-  Nu = Interpolable((∇(Th) ⋅ nb); searchmethod = KDTreeSearch(num_nearest_vertices=5))
+  Nu = Interpolable(
+    (∇(Th)⋅nb); searchmethod = KDTreeSearch(num_nearest_vertices=5)
+  )
 
   # entropies
   Sth = interpolate(
@@ -226,7 +237,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
     +
     ((inner(x,TensorValue(0,1,1,0))) |> x->x*x)
   ), TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1))
-  writevtk(Ωₕ,"entropy_$(Ra)_$(Pr)_$(bc).vtu",cellfields=["Sth"=>Sth, "Sfl" => Sfl])
+  writevtk(Ωₕ,"entropy_$(Ra)_$(Pr)_$(bc).vtu",cellfields=[
+    "Sth"=>Sth, "Sfl" => Sfl
+  ])
 
   n = 100
   xs = LinRange(0, 1, n)
@@ -378,22 +391,3 @@ out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[
 # end
 # end
 # 1+1
-
-
-
-
-
-
-
-
-
-
-# # OLD
-# power(x,n) = x^((n-1)/2)
-# D(∇u) = 1//2 * (∇u + ∇u')
-
-# test = interpolate(
-#   ∇(out.uh) |> x-> (x->power(x,0.1)) ∘ (2 * (D(x) ⊙ D(x)))
-# , TestFESpace(out.model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
-# )
-# writevtk(out.Ωₕ,"test.vtu",cellfields=["test"=>test])
