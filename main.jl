@@ -11,9 +11,9 @@ Random.seed!(1234)
 function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(;psi=5))
   @info Pr, Ra, bc
 
-  n = 40
+  n_elems = 10
   domain = (0,1,0,1)
-  partition = (n,n)
+  partition = (n_elems, n_elems)
   model = CartesianDiscreteModel(domain,partition)
   btrian = BoundaryTriangulation(model)
 
@@ -74,12 +74,10 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   g = VectorValue([0,1])
 
   γ = 1E-3 # influences convergence of Newton and avoids singularities
-
+  γdot(∇u) = γ + 2*(D(∇u) ⊙ D(∇u))
   D(∇u) = 1/2 * (∇u + ∇u')
-  μ(∇u,n) = (x->x^((n-1)/2)) ∘ (γ + 2*(D(∇u) ⊙ D(∇u)))
-  dμ(∇u,d∇u,n) = ((n-1)/2) * (
-    (x->x^((n-3)/2)) ∘ (γ + 2*(D(∇u) ⊙ D(∇u)))
-  ) * 4 *(D(∇u) ⊙ D(d∇u))
+  μ(∇u,n) = (x->x^((n-1)/2)) ∘ γdot(∇u)
+  dμ(∇u,d∇u,n) = ((n-1)/2) * ((x->x^((n-3)/2)) ∘ γdot(∇u)) * 4 *(D(∇u) ⊙ D(d∇u))
 
   conv(u,∇u) = (∇u')⋅u
   dconv(du,∇du,u,∇u) = conv(u,∇du)+conv(du,∇u)
@@ -91,7 +89,7 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
 
   b(u,v) = ∫( 2*Pr*μ(∇(u),nμ)*D(∇(v))⊙D(∇(u)) )dΩ
   db(u,du,v) = ∫(
-    2*Pr*(dμ(∇(u),∇(du),nμ)*D(∇(u))⊙D(∇(v)) + μ(∇(u),nμ)*D(∇(du)))
+    2*Pr*(dμ(∇(u),∇(du),nμ)*D(∇(u)) + μ(∇(u),nμ)*D(∇(du))) ⊙ D(∇(v))
   )dΩ
 
   c(u,v) = ∫( v⊙(conv∘(u,∇(u))) )dΩ
@@ -123,7 +121,7 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
     )
   solver = FESolver(nls)
 
-
+  # random initial guess
   # xu = rand(Float64,num_free_dofs(U))
   # # uh0 = FEFunction(U,xu)
   # xp = rand(Float64,num_free_dofs(P))
@@ -136,6 +134,7 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   # ph = out[1][2]
   # Th = out[1][3]
 
+  # zero initial guess
   uh, ph, Th = solve(solver,op)
 
   # stream function
@@ -154,8 +153,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   ])
 
   # plotting
-  xs = LinRange(0, 1, n)
-  ys = LinRange(0, 1, n)
+  n_plot = 100
+  xs = LinRange(0, 1, n_plot)
+  ys = LinRange(0, 1, n_plot)
   search_method = KDTreeSearch(num_nearest_vertices=5)
 
   f = Figure(
@@ -241,9 +241,8 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
     "Sth"=>Sth, "Sfl" => Sfl
   ])
 
-  n = 100
-  xs = LinRange(0, 1, n)
-  ys = LinRange(0, 1, n)
+  xs = LinRange(0, 1, n_plot)
+  ys = LinRange(0, 1, n_plot)
 
   cache_Sth = return_cache(Sth, Gridap.Point(0.0, 0.0))
   cache_Sfl = return_cache(Sfl, Gridap.Point(0.0, 0.0))
@@ -308,9 +307,9 @@ function simulate2(;Pr=1.0, Ra=1.0, bc=:one, linesearch=BackTracking(), levels=(
   return (uh=uh, ph=ph, Th=Th, psih=psih, Nu=Nu, Sth=Sth, Sfl=Sfl, btrian=btrian, model=model, Ωₕ=Ωₕ, Pr=Pr, Ra=Ra)
 end
 
-# out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=0.1:0.2:1.1]))
+out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=0.1:0.2:1.1]))
 # out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=1:2:13]))
-out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=vcat([i for i=0.5:1.0:4.5],[5.0])))
+# out = simulate2(Pr=1E3, Ra=1E4, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=vcat([i for i=0.5:1.0:4.5],[5.0])))
 
 
 # cases=
