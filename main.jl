@@ -8,10 +8,13 @@ using LineSearches: BackTracking, StrongWolfe
 using Random
 Random.seed!(1234)
 
-function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), levels=(;psi=5))
-  @info Pr, Ra, bc
+function simulate2(
+  ;Pr=1.0, Ra=1.0, n=1.0, linesearch=BackTracking(), levels=(;psi=5)
+  , T_diri_tags=["leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint", "toprightpoint"], T_diri_expressions=[0.0,1.0,0.0,1.0,0.0,1.0], bcname="turan"
+)
+  @info Pr, Ra, n, T_diri_tags, T_diri_expressions
 
-  n_elems = 10
+  n_elems = 100
   domain = (0,1,0,1)
   partition = (n_elems, n_elems)
   model = CartesianDiscreteModel(domain,partition)
@@ -41,25 +44,17 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
   reffeₚ = ReferenceFE(lagrangian,Float64,order-1;space=:P)
   Q = TestFESpace(model,reffeₚ,conformity=:L2,constraint=:zeromean)
 
-  Θ = TestFESpace(model,reffe_T,conformity=:H1,dirichlet_tags=[
-    "leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint",
-    "toprightpoint"
-  ])
+  if !isempty(T_diri_tags)
+    Θ = TestFESpace(model,reffe_T,conformity=:H1,dirichlet_tags=T_diri_tags)
+  else
+    Θ = TestFESpace(model,reffe_T,conformity=:H1)
+  end
 
   u_noslip = VectorValue(0,0)  # noslip
-  wave(x) = sin(pi*x[1])
-
-  if bc == :one
-    bc_fun = 1.0
-  elseif  bc == :wave
-    bc_fun = wave
-  else
-    error("bc not supported")
-  end
 
   U = TrialFESpace(V,u_noslip)
   P = TrialFESpace(Q)
-  T = TrialFESpace(Θ,[0.0,bc_fun,0.0,1.0,0.0,1.0])
+  T = TrialFESpace(Θ,T_diri_expressions)
 
   Y = MultiFieldFESpace([V, Q, Θ])
   X = MultiFieldFESpace([U, P, T])
@@ -68,8 +63,6 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
   Ωₕ = Triangulation(model)
   dΩ = Measure(Ωₕ,degree)
 
-  # Ra = 1E5
-  # Pr = 0.7
   g = VectorValue([0,1])
 
   γ = 1E-3 # influences convergence of Newton and avoids singularities
@@ -82,7 +75,7 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
   dconv(du,∇du,u,∇u) = conv(u,∇du)+conv(du,∇u)
 
   a((u,p,T),(v,q,θ)) = ∫(
-    0 * Pr*∇(v)⊙∇(u)
+    0 * Pr*∇(v)⊙∇(u)  # TODO: Make if statement for n==1?
     - (∇⋅v)*p + q*(∇⋅u) + ∇(T) ⋅ ∇(θ) - Ra*Pr*(T)*(g⋅v)
   )dΩ
 
@@ -115,8 +108,8 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
     # , beta=0.1
     , linesearch=linesearch
     # , linesearch=StrongWolfe()
-    , ftol=1E-15
-    , xtol=1E-20
+    , ftol=1E-8
+    , xtol=1E-10
     )
   solver = FESolver(nls)
 
@@ -147,7 +140,7 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
   solver = LinearFESolver(ls)
   psih = solve(solver,op)
 
-  writevtk(Ωₕ,"results_$(Ra)_$(Pr)_$(bc).vtu",cellfields=[
+  writevtk(Ωₕ,"results_$(Ra)_$(Pr)_$(n)_$(bcname).vtu",cellfields=[
     "uh"=>uh,"ph"=>ph,"Th"=>Th, "psih"=>psih
   ])
 
@@ -187,7 +180,7 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
     ,labelsize = 15
     ,color=:black
   )
-  save("./streamfunction_$(Ra)_$(Pr)_$(bc).pdf", f)
+  save("./streamfunction_$(Ra)_$(Pr)_$(n)_$(bcname).pdf", f)
 
   Thi = Interpolable(Th; searchmethod=search_method)
   cache_T = return_cache(Thi, Gridap.Point(0.0, 0.0))
@@ -217,7 +210,7 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
     ,labelsize = 15
     ,color=:black
   )
-  save("./temperature_$(Ra)_$(Pr)_$(bc).pdf", f)
+  save("./temperature_$(Ra)_$(Pr)_$(n)_$(bcname).pdf", f)
 
   # Nusselt number
   # TODO: Add left wall
@@ -236,7 +229,7 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
     +
     ((inner(x,TensorValue(0,1,1,0))) |> x->x*x)
   ), TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1))
-  writevtk(Ωₕ,"entropy_$(Ra)_$(Pr)_$(bc).vtu",cellfields=[
+  writevtk(Ωₕ,"entropy_$(Ra)_$(Pr)_$(n)_$(bcname).vtu",cellfields=[
     "Sth"=>Sth, "Sfl" => Sfl
   ])
 
@@ -265,13 +258,13 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
     ,limits = (0, 1, 0, 1)
   )
   contour!(xs, ys, z_Sth
-  # ,levels=vcat(1:1:7, 10:5:30, 0.01,0.1,0.5,0.25)
-    ,levels=10
+    ,levels=vcat(1:1:7, 10:5:30, 0.01,0.1,0.5,0.25)
+    # ,levels=10
     ,labels=true
     ,labelsize = 15
     ,color=:black
   )
-  save("./entropy_heat_$(Ra)_$(Pr)_$(bc).pdf", f)
+  save("./entropy_heat_$(Ra)_$(Pr)_$(n)_$(bcname).pdf", f)
 
   f = Figure(
     size = (500, 500)
@@ -294,48 +287,64 @@ function simulate2(;Pr=1.0, Ra=1.0, n=1.0, bc=:one, linesearch=BackTracking(), l
       string(isinteger(lev_short) ? round(Int, lev_short) : lev_short)
   end
   contour!(xs, ys, z_Sfl
-    # ,levels=vcat(0.005:0.005:0.05)
-    ,levels=10
+    ,levels=vcat(0.005:0.005:0.05)
+    # ,levels=10
     ,labels=true
     ,labelsize = 15
     ,labelformatter=formatter
     ,color=:black
   )
-  save("./entropy_fluid_$(Ra)_$(Pr)_$(bc).pdf", f)
+  save("./entropy_fluid_$(Ra)_$(Pr)_$(n)_$(bcname).pdf", f)
 
   return (uh=uh, ph=ph, Th=Th, psih=psih, Nu=Nu, Sth=Sth, Sfl=Sfl, btrian=btrian, model=model, Ωₕ=Ωₕ, Pr=Pr, Ra=Ra)
 end
 
-# out = simulate2(Pr=0.7, Ra=1E3, n=1.0, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))))
+# Define boundary conditions
+wave(x) = sin(pi*x[1])
+basak_uniform = (;bcname="basak_uniform", T_diri_tags=["botline", "leftline", "rightline", "botleftpoint", "botrightpoint"], T_diri_expressions=[1.0,0.0,0.0,0.5,0.5])
+basak_wave = (;bcname="basak_wave", T_diri_tags=["botline", "leftline", "rightline", "botleftpoint", "botrightpoint"], T_diri_expressions=[wave,0.0,0.0,0.0,0.0])
+turan = (;bcname="turan", T_diri_tags=["leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint", "toprightpoint"], T_diri_expressions=[0.0,1.0,0.0,1.0,0.0,1.0])
 
-# out = simulate2(Pr=1E3, Ra=1E4, n=1.8, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=0.1:0.2:1.1]))
-out = simulate2(Pr=1E3, Ra=1E4, n=0.6, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=1:2:13]))
-# out = simulate2(Pr=1E3, Ra=1E4, n=1.0, bc=:one, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=vcat([i for i=0.5:1.0:4.5],[5.0])))
+# out = simulate2(Pr=0.7, Ra=1E3, n=1.0, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))); turan...)
 
+# TODO: Move to cases
+# out = simulate2(Pr=1E3, Ra=1E4, n=1.8, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=0.1:0.2:1.1]); turan...)
+# out = simulate2(Pr=1E3, Ra=1E4, n=0.6, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=[i for i=1:2:13]); turan...)
+# out = simulate2(Pr=1E3, Ra=1E4, n=1.0, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=vcat([i for i=0.5:1.0:4.5],[5.0])); turan...)
 
-# cases=
-# [
-#   [0.7, 1E3, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-#   [0.7, 5*1E3, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-#   [0.7, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-#   [0.1, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-#   [1.0, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [10.0, 1E5, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [0.015, 1E3, 1.0, :one, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-#   [0.7, 1E3, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-#   [0.7, 5*1E3, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)))],
-#   [0.7, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)))],
-#   [0.1, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)))],
-#   [1.0, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [10.0, 1E5, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)))],
-#   [0.015, 1E3, :wave, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)))],
-# ]
+cases=
+[
+  # [0.7, 1E3, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_uniform],
+  # [0.7, 5*1E3, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x))), basak_uniform],
+  # [0.7, 1E5, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x))), basak_uniform],
+  # [0.1, 1E5, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x))), basak_uniform],
+  # [1.0, 1E5, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_uniform],
+  # [10.0, 1E5, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_uniform],
+  # [0.015, 1E3, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_uniform],
+  # [0.7, 1E3, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_wave],
+  # [0.7, 5*1E3, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x))), basak_wave],
+  # [0.7, 1E5, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x))), basak_wave],
+  # [0.1, 1E5, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x))), basak_wave],
+  # [1.0, 1E5, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_wave],
+  # [10.0, 1E5, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_wave],
+  # [0.015, 1E3, 1.0, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_wave],
+  # turan
+  [1E3, 1E4, 0.6, BackTracking(), (;T=[0.1*i for i=1:10],psi=([i for i=1:2:13] |> x->vcat(x,-x))), turan],
+  [1E3, 1E4, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=(vcat([i for i=0.5:1.0:4.5],[5.0]) |> x->vcat(x,-x))), turan],
+  [1E3, 1E4, 1.8, BackTracking(), (;T=[0.1*i for i=1:10],psi=([i for i=0.1:0.2:1.1] |> x->vcat(x,-x))), turan],
+  [1E3, 1E5, 0.6, BackTracking(), (;T=[0.1*i for i=1:10],psi=([4,12,20,26,28,29] |> x->vcat(x,-x))), turan],
+  [1E3, 1E5, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=(vcat([i for i=1:2:11],[10]) |> x->vcat(x,-x))), turan],
+  [1E3, 1E5, 1.8, BackTracking(), (;T=[0.1*i for i=1:10],psi=([i for i=0.2:0.4:3.0] |> x->vcat(x,-x))), turan],
+  [1E3, 1E6, 0.6, BackTracking(), (;T=[0.1*i for i=1:10],psi=([10,30,50,60,65] |> x->vcat(x,-x))), turan],
+  [1E3, 1E6, 1.0, BackTracking(), (;T=[0.1*i for i=1:10],psi=(vcat([i for i=2:4:18],[19]) |> x->vcat(x,-x))), turan],
+  [1E3, 1E6, 1.8, BackTracking(), (;T=[0.1*i for i=1:10],psi=(vcat([i for i=0.5:1.0:5.5],[6]) |> x->vcat(x,-x))), turan],
+]
 
-# outs = []
-# for case in cases
-#   out = simulate2(Pr=case[1], Ra=case[2], n=case[3], bc=case[4], linesearch=case[5], levels=case[6])
-#   push!(outs, out)
-# end
+outs = []
+for case in cases
+  out = simulate2(Pr=case[1], Ra=case[2], n=case[3], linesearch=case[4], levels=case[5]; case[6]...)
+  push!(outs, out)
+end
 
 
 # # Nusselt number
