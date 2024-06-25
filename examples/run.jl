@@ -10,22 +10,23 @@ turan = (;bcname="turan", T_diri_tags=["leftline", "rightline", "botleftpoint", 
 
 # out = GFluxx.simulate(Pr=0.7, Ra=1E3, n=1.0, 50, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))); turan...)
 
+n_elems1 = 20
 cases=
 [
-  [0.7, 1E3, 1.0, 100, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_uniform],
-  [0.7, 5*1E3, 1.0, 100, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x))), basak_uniform],
-  [0.7, 1E5, 1.0, 100, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x))), basak_uniform],
-  [0.1, 1E5, 1.0, 100, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x))), basak_uniform],
-  [1.0, 1E5, 1.0, 100, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_uniform],
-  [10.0, 1E5, 1.0, 100, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_uniform],
-  [0.015, 1E3, 1.0, 100, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_uniform],
-  [0.7, 1E3, 1.0, 100, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_wave],
-  [0.7, 5*1E3, 1.0, 100, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x))), basak_wave],
-  [0.7, 1E5, 1.0, 100, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x))), basak_wave],
-  [0.1, 1E5, 1.0, 100, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x))), basak_wave],
-  [1.0, 1E5, 1.0, 100, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_wave],
-  [10.0, 1E5, 1.0, 100, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x))), basak_wave],
-  [0.015, 1E3, 1.0, 100, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))), basak_wave],
+  [0.7, 1E3, 1.0, n_elems1, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_uniform],
+  [0.7, 5*1E3, 1.0, n_elems1, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_uniform],
+  [0.7, 1E5, 1.0, n_elems1, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_uniform],
+  [0.1, 1E5, 1.0, n_elems1, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_uniform],
+  [1.0, 1E5, 1.0, n_elems1, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_uniform],
+  [10.0, 1E5, 1.0, n_elems1, BackTracking(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_uniform],
+  [0.015, 1E3, 1.0, n_elems1, BackTracking(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_uniform],
+  [0.7, 1E3, 1.0, n_elems1, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_wave],
+  [0.7, 5*1E3, 1.0, n_elems1, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.15,0.5,1,1.3] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_wave],
+  [0.7, 1E5, 1.0, n_elems1, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,13] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_wave],
+  [0.1, 1E5, 1.0, n_elems1, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,4,7,9] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_wave],
+  [1.0, 1E5, 1.0, n_elems1, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_wave],
+  [10.0, 1E5, 1.0, n_elems1, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([1,5,10,14] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_wave],
+  [0.015, 1E3, 1.0, n_elems1, StrongWolfe(), (;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x)),Sth=5,Sfl=5), basak_wave],
   # # turan
   # [1E3, 1E4, 0.6, 200, BackTracking(), (;T=[0.1*i for i=1:10],psi=([i for i=1:2:13] |> x->vcat(x,-x))), turan],
   # [1E3, 1E4, 1.0, 200, BackTracking(), (;T=[0.1*i for i=1:10],psi=(vcat([i for i=0.5:1.0:4.5],[5.0]) |> x->vcat(x,-x))), turan],
