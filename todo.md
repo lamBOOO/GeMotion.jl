@@ -5,3 +5,4 @@
 - Outsource postprocessing functions
 - Include output folder specification (default=out?)
 - Rename simulate to solve
+- Make mesh generic

@@ -1,8 +1,8 @@
 using Test
 
-using GMLFlow
+using GFluxx
 
 @testset "Test Examples" begin
-  GMLFlow.simulate2()
+  GFluxx.simulate2()
 end
 

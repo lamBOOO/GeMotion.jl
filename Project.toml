@@ -1,5 +1,5 @@
-name = "GMLFlow"
-uuid = "378c646e-2940-4e00-a4ad-60865ca04128"
+name = "GFluxx"
+uuid = "36728288-a4f7-4519-b5c4-8e73b1bcd050"
 authors = ["Lambert Theisen <lambert.theisen@rwth-aachen.de>"]
 version = "0.1.0"
 
