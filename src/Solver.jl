@@ -139,6 +139,7 @@ function simulate(;
   solver = FESolver(nls)
 
   # random initial guess
+  # println("Solve nonlinear problem")
   # xu = rand(Float64,num_free_dofs(U))
   # # uh0 = FEFunction(U,xu)
   # xp = rand(Float64,num_free_dofs(P))
