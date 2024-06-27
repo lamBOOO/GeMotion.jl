@@ -29,4 +29,4 @@ out = GFluxx.simulate(
     T_diri_expressions=[0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
   )...
 )
-# $(Ra)_$(Pr)_$(n)_$(bcname)
+
