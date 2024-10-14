@@ -3,7 +3,7 @@
 ## API
 
 ```@autodocs
-Modules = [GenMatFlow]
+Modules = [GeMotion]
 Private = true
 Order   = [:function, :type]
 ```
