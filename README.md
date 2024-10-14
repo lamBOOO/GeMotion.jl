@@ -33,5 +33,5 @@ julia --project -e 'import Pkg; Pkg.instantiate()'
 - Run examples by navigating to the folder and execute the examples from the shell:
 ```bash
 cd examples/validation-basak
-include("basak.jl")
+julia --project basak.jl
 ```
