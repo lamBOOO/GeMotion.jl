@@ -1,5 +1,5 @@
 <p align="center">
-  <img height="100" src="media/logo_text.png" alt="Resume application project app icon">
+  <img height="100" src="media/logo_textcentered.png" alt="Resume application project app icon">
 <p>
 
 <div align="center">
