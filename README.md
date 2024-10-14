@@ -6,12 +6,14 @@
 <img src="https://github.com/lamBOOO/GenMatFlow.jl/actions/workflows/test.yml/badge.svg" alt="Testing workflow badge"/>
 </div>
 
-# GenMatFlow.jl
+# GenMatFlow.jl: A Navier-Stokes-Fourier Solver for generalized material laws
 
-- Navier-Stokes-Fourier Solver for generalized material laws, including:
+- Different material laws, including:
   - Newtonian fluids: $\boldsymbol{\sigma} = \boldsymbol{D}(\boldsymbol{u}) = \frac12 (\boldsymbol{\nabla} \boldsymbol{u} + \boldsymbol{\nabla} \boldsymbol{u}^T)$
   - Non-Newtonian fluids with power-law: $\boldsymbol{\sigma} = K {\left(2 \boldsymbol{D} \boldsymbol{\colon}  \boldsymbol{D} \right)}^{\frac{1-n}{2}} \boldsymbol{D}(\boldsymbol{u})$
 - Discretization using Finite Elements in [Gridap.jl](https://github.com/gridap/Gridap.jl)
+- Solve nonlinear systems using Newtons method
+
 
 ## Installation
 
@@ -28,5 +30,6 @@ julia --project -e 'import Pkg; Pkg.instantiate()'
 
 - Run examples by navigating to the folder and execute the examples from the shell:
 ```bash
-cd TODO
+cd examples/validation-basak
+include("basak.jl")
 ```

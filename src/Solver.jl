@@ -8,6 +8,44 @@ using LineSearches: BackTracking, StrongWolfe
 using Random
 Random.seed!(1234)
 
+export simulate
+
+"""
+    simulate(;name="sim",Pr=1.0,Ra=1.0,n=1.0,n_elems=20,nlsolver_opts=(;show_trace=true,method=:newton,linesearch=BackTracking(),ftol=1E-8,xtol=1E-10),levels=(;T=5,psi=5,Sth=5,Sfl=5),T_diri_tags=["leftline","rightline","botleftpoint","botrightpoint","topleftpoint","toprightpoint"],T_diri_expressions=[0.0,1.0,0.0,1.0,0.0,1.0])
+
+Simulate the flow in a square cavity with a moving lid and a temperature gradient.
+
+# Arguments
+- `name::String`: Name of the simulation.
+- `Pr::Float64`: Prandtl number.
+- `Ra::Float64`: Rayleigh number.
+- `n::Float64`: Power of the viscosity.
+- `n_elems::Int`: Number of elements in each direction.
+- `nlsolver_opts::Dict`: Options for the nonlinear solver.
+- `levels::Dict`: Levels for the contour plots.
+- `T_diri_tags::Array{String}`: Tags for the Dirichlet boundary conditions for the temperature.
+- `T_diri_expressions::Array{Float64}`: Expressions for the Dirichlet boundary conditions for the temperature.
+
+# Returns
+- `uh::FEFunction`: Velocity field.
+- `ph::FEFunction`: Pressure field.
+- `Th::FEFunction`: Temperature field.
+- `psih::FEFunction`: Stream function.
+- `Nu::Interpolable`: Nusselt number.
+- `Sth::FEFunction`: Local heat entropy.
+- `Sfl::FEFunction`: Local fluid entropy.
+- `btrian::BoundaryTriangulation`: Boundary triangulation.
+- `model::CartesianDiscreteModel`: Model.
+- `Ωₕ::Triangulation`: Triangulation.
+- `Pr::Float64`: Prandtl number.
+- `Ra::Float64`: Rayleigh number.
+
+# Example
+```julia
+simulate(;name="sim",Pr=1.0,Ra=1.0,n=1.0,n_elems=20,nlsolver_opts=(;show_trace=true,method=:newton,linesearch=BackTracking(),ftol=1E-8,xtol=1E-10),levels=(;T=5,psi=5,Sth=5,Sfl=5),T_diri_tags=["leftline","rightline","botleftpoint","botrightpoint","topleftpoint","toprightpoint"],T_diri_expressions=[0.0,1.0,0.0,1.0,0.0,1.0])
+```
+
+"""
 function simulate(;
   name="sim",
   Pr=1.0,
