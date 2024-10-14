@@ -3,7 +3,9 @@
 <p>
 
 <div align="center">
-<img src="https://github.com/lamBOOO/GenMatFlow.jl/actions/workflows/test.yml/badge.svg" alt="Testing workflow badge"/>
+  <a href="https://github.com/lamBOOO/GenMatFlow.jl/actions"><img src="https://github.com/lamBOOO/GenMatFlow.jl/actions/workflows/test.yml/badge.svg" alt="Testing workflow badge"/></a>
+  <a href="https://lambooo.github.io/GenMatFlow.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg" alt="Dev documentation badge"/></a>
+  <a href="https://github.com/lamBOOO/GenMatFlow.jl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/lamBOOO/GenMatFlow.jl.svg" alt="License badge"/></a>
 </div>
 
 # GenMatFlow.jl: A Navier-Stokes-Fourier Solver for generalized material laws
