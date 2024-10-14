@@ -3,7 +3,7 @@ using LineSearches: BackTracking
 using Gridap
 
 out = GeMotion.simulate(
-  name="simple",
+  name="simple_new",
   Pr=0.7,
   Ra=1E3,
   n=1.0,
