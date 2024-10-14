@@ -3,7 +3,7 @@
 <p>
 
 <div align="center">
-![testing workflow](https://github.com/lamBOOO/GenMatFlow.jl/actions/workflows/test.yml/badge.svg)
+<img src="https://github.com/lamBOOO/GenMatFlow.jl/actions/workflows/test.yml/badge.svg" alt="Testing workflow badge"/>
 </div>
 
 # GenMatFlow.jl
