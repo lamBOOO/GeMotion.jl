@@ -1,8 +1,8 @@
-using GFluxx
+using GenMatFlow
 using LineSearches: BackTracking
 using Gridap
 
-out = GFluxx.simulate(
+out = GenMatFlow.simulate(
   name="simple",
   Pr=0.7,
   Ra=1E3,

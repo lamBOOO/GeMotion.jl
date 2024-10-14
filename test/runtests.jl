@@ -1,9 +1,9 @@
 using Test
 
-using GFluxx
+using GenMatFlow
 
 @testset "Unit tests" begin
-  GFluxx.simulate()
+  GenMatFlow.simulate()
 end
 
 @testset "Test Examples" begin

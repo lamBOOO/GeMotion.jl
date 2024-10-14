@@ -1,4 +1,4 @@
-using GFluxx
+using GenMatFlow
 using LineSearches: BackTracking, StrongWolfe
 
 
@@ -8,7 +8,7 @@ basak_uniform = (;T_diri_tags=["botline", "leftline", "rightline", "botleftpoint
 basak_wave = (;T_diri_tags=["botline", "leftline", "rightline", "botleftpoint", "botrightpoint"], T_diri_expressions=[wave,0.0,0.0,0.0,0.0])
 turan = (;T_diri_tags=["leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint", "toprightpoint"], T_diri_expressions=[0.0,1.0,0.0,1.0,0.0,1.0])
 
-# out = GFluxx.simulate(Pr=0.7, Ra=1E3, n=1.0, 50, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))); turan...)
+# out = GenMatFlow.simulate(Pr=0.7, Ra=1E3, n=1.0, 50, linesearch=BackTracking(), levels=(;T=[0.1*i for i=1:10],psi=([0.01,0.05,0.1,0.15] |> x->vcat(x,-x))); turan...)
 
 n_elems1 = 20
 cases=
@@ -27,6 +27,6 @@ cases=
 
 outs = []
 for case in cases
-  out = GFluxx.simulate(Pr=case[1], Ra=case[2], n=case[3], n_elems=case[4], linesearch=case[5], levels=case[6]; case[7]...)
+  out = GenMatFlow.simulate(Pr=case[1], Ra=case[2], n=case[3], n_elems=case[4], linesearch=case[5], levels=case[6]; case[7]...)
   push!(outs, out)
 end
