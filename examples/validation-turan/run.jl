@@ -13,7 +13,7 @@ nlsolver_opts = (;
   linesearch = BackTracking(),
 )
 
-n_elems = 100
+n_elems = 200
 if haskey(ENV, "GITHUB_ACTIONS")
   # Lower the value when in GitHub Actions environment
   n_elems = 20  # New value for GitHub Actions
