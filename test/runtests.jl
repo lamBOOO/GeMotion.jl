@@ -1,9 +1,9 @@
 using Test
 
-using GenMatFlow
+using GeMotion
 
 @testset "Unit tests" begin
-  GenMatFlow.simulate()
+  GeMotion.simulate()
 end
 
 @testset "Test Examples" begin

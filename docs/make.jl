@@ -1,11 +1,11 @@
 push!(LOAD_PATH,"../src/")
 push!(LOAD_PATH,"src/")
 
-using GenMatFlow
+using GeMotion
 using Documenter
 
 makedocs(
-  sitename="GenMatFlow.jl",
+  sitename="GeMotion.jl",
   remotes = nothing,
   pages = Any[
         "Home" => "index.md",
@@ -15,5 +15,5 @@ makedocs(
 
 # optionally deploy docs to github pages
 deploydocs(
-    repo = "github.com/lamBOOO/GenMatFlow.jl.git",
+    repo = "github.com/lamBOOO/GeMotion.jl.git",
 )

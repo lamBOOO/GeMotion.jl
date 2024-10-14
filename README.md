@@ -3,12 +3,12 @@
 <p>
 
 <div align="center">
-  <a href="https://github.com/lamBOOO/GenMatFlow.jl/actions"><img src="https://github.com/lamBOOO/GenMatFlow.jl/actions/workflows/test.yml/badge.svg" alt="Testing workflow badge"/></a>
-  <a href="https://lambooo.github.io/GenMatFlow.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg" alt="Dev documentation badge"/></a>
-  <a href="https://github.com/lamBOOO/GenMatFlow.jl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/lamBOOO/GenMatFlow.jl.svg" alt="License badge"/></a>
+  <a href="https://github.com/lamBOOO/GeMotion.jl/actions"><img src="https://github.com/lamBOOO/GeMotion.jl/actions/workflows/test.yml/badge.svg" alt="Testing workflow badge"/></a>
+  <a href="https://lambooo.github.io/GeMotion.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg" alt="Dev documentation badge"/></a>
+  <a href="https://github.com/lamBOOO/GeMotion.jl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/lamBOOO/GeMotion.jl.svg" alt="License badge"/></a>
 </div>
 
-# GenMatFlow.jl: A Navier-Stokes-Fourier Solver for generalized material laws
+# GeMotion.jl: A Navier-Stokes-Fourier Solver for generalized material laws
 
 - Different material laws, including:
   - Newtonian fluids: $\boldsymbol{\sigma} = \boldsymbol{D}(\boldsymbol{u}) = \frac12 (\boldsymbol{\nabla} \boldsymbol{u} + \boldsymbol{\nabla} \boldsymbol{u}^T)$
@@ -21,8 +21,8 @@
 
 - Clone the repository and open the folder
 ```bash
-git clone git@github.com:lamBOOO/GenMatFlow.jl.git
-cd GenMatFlow.jl
+git clone git@github.com:lamBOOO/GeMotion.jl.git
+cd GeMotion.jl
 ```
 
 - Install all Julia dependencies

@@ -1,4 +1,4 @@
-using GenMatFlow
+using GeMotion
 using LineSearches: BackTracking, StrongWolfe
 
 
@@ -35,6 +35,6 @@ cases =
 
 outs = []
 for (i,case) in enumerate(cases)
-  out = GenMatFlow.simulate(name="$i", Pr=case[1], Ra=case[2], n=case[3], n_elems=case[4], nlsolver_opts=case[5], levels=case[6]; case[7]...)
+  out = GeMotion.simulate(name="$i", Pr=case[1], Ra=case[2], n=case[3], n_elems=case[4], nlsolver_opts=case[5], levels=case[6]; case[7]...)
   push!(outs, out)
 end
