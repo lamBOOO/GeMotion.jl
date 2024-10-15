@@ -12,7 +12,7 @@
 # GeMotion.jl: A Navier-Stokes-Fourier Solver for generalized material laws
 
 - Different material laws, including:
-  - Newtonian fluids: $\boldsymbol{\sigma} = \boldsymbol{D}(\boldsymbol{u}) = \frac12 (\boldsymbol{\nabla} \boldsymbol{u} + \boldsymbol{\nabla} \boldsymbol{u}^T)$
+  - Newtonian fluids $\boldsymbol{\sigma} = \boldsymbol{D}(\boldsymbol{u}) = 1/2 (\boldsymbol{\nabla} \boldsymbol{u} + \boldsymbol{\nabla} \boldsymbol{u}^T)$
   - Non-Newtonian fluids with power-law: $\boldsymbol{\sigma} = K {\left(2 \boldsymbol{D} \boldsymbol{\colon}  \boldsymbol{D} \right)}^{\frac{1-n}{2}} \boldsymbol{D}(\boldsymbol{u})$
 - Discretization using Finite Elements in [Gridap.jl](https://github.com/gridap/Gridap.jl)
 - Solve nonlinear systems using Newtons method
