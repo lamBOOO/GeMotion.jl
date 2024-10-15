@@ -3,12 +3,12 @@ using Markdown
 # Read the README.md file as a string
 readme = read("../../README.md", String)
 
-# Find the position of the first '#' character (first headline)
-pos = findfirst(r"#", readme)[1]
+# Find the position of the first '# GeMotion.jl' character (first headline)
+pos = findfirst(r"# GeMotion.jl", readme)[1]
 
-# Check if a '#' was found
+# Check if a '# GeMotion.jl' was found
 if isnothing(pos)
-    error("No '#' found in README.md")
+    error("No '# GeMotion.jl' found in README.md")
 end
 
 print(readme)
