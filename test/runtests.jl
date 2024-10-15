@@ -16,7 +16,7 @@ end
         dir, _ = splitdir(fullpath)
         @testset "$(fullpath)" begin
           cd(dir) do
-          @eval Module() begin
+          @time @eval Module() begin
             # to avoid putting all examples in a separte main()
             # to avoid conflicting redefinitions of variables/functions
             # see: https://github.com/JuliaLang/julia/issues/40189

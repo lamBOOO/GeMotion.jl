@@ -33,6 +33,9 @@ cases =
 if haskey(ENV, "GITHUB_ACTIONS")
   n_elems = 20
   cases = cases[1:1]
+  cases[1][4] = n_elems
+  @info "Changed values for CI:"
+  @show n_elems, cases
 end
 
 outs = []
