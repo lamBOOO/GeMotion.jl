@@ -19,7 +19,7 @@
 
 ## Installation
 
-- Clone the repository and open the folder
+- Clone the repository and open its folder
 ```bash
 git clone git@github.com:lamBOOO/GeMotion.jl.git
 cd GeMotion.jl
