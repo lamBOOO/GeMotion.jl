@@ -1,5 +1,6 @@
 <p align="center">
-  <img height="100" src="media/logo_textcentered.png" alt="Resume application project app icon">
+  <img height="100" src="media/logo_textcentered.pn#gh-light-mode-only" alt="GeMotion.jl logo light">
+  <img height="100" src="media/logo_textcentereddark.png#gh-dark-mode-only" alt="GeMotion.jl logo dark">
 <p>
 
 <div align="center">
