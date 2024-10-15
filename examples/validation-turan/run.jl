@@ -14,10 +14,6 @@ nlsolver_opts = (;
 )
 
 n_elems = 200
-if haskey(ENV, "GITHUB_ACTIONS")
-  # Lower the value when in GitHub Actions environment
-  n_elems = 20  # New value for GitHub Actions
-end
 
 cases =
 [
@@ -32,6 +28,12 @@ cases =
   [1E3, 1E6, 1.0, n_elems, nlsolver_opts, (;T=[0.1*i for i=1:10],psi=(vcat([i for i=2:4:18],[19]) |> x->vcat(x,-x)), Sth=5, Sfl=10), turan],
   [1E3, 1E6, 1.8, n_elems, nlsolver_opts, (;T=[0.1*i for i=1:10],psi=(vcat([i for i=0.5:1.0:5.5],[6]) |> x->vcat(x,-x)), Sth=5, Sfl=10), turan],
 ]
+
+# Make faster when in GitHub Actions environment
+if haskey(ENV, "GITHUB_ACTIONS")
+  n_elems = 20
+  cases = cases[1:1]
+end
 
 outs = []
 for (i,case) in enumerate(cases)
