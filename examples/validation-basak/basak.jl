@@ -5,6 +5,22 @@ using Gridap
 using Gridap.Arrays  # return_cache
 using CSV, DataFrames
 
+# Setup model
+# labelling:
+# 1-2-3-4 = botleftpoint-botrightpoint-topleftpoint-toprightpoint
+# 5-6-7-8 = botline-topline-leftline-rightline
+model = CartesianDiscreteModel((0, 1, 0, 1), (40, 40))  # 100 for paper
+labels = get_face_labeling(model)
+add_tag_from_tags!(labels, "botleftpoint", [1,])
+add_tag_from_tags!(labels, "botrightpoint", [2,])
+add_tag_from_tags!(labels, "topleftpoint", [3,])
+add_tag_from_tags!(labels, "toprightpoint", [4,])
+add_tag_from_tags!(labels, "botline", [5,])
+add_tag_from_tags!(labels, "topline", [6,])
+add_tag_from_tags!(labels, "leftline", [7,])
+add_tag_from_tags!(labels, "rightline", [8,])
+add_tag_from_tags!(labels, "all", [1, 2, 3, 4, 5, 6, 7, 8])
+
 # solver settings
 nlsolver_opts = (;
   show_trace=true,
@@ -27,31 +43,35 @@ wave = (;
   T_diri_expressions=[x -> sin(pi * x[1]), 0.0, 0.0, 0.0, 0.0]
 )
 
-n_elems = 40  # 100 for paper
 cases =
   [
-    [0.7, 1E3, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.7, 5 * 1E3, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.15, 0.5, 1, 1.3] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.7, 1E5, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 13] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.1, 1E5, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [1.0, 1E5, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [10.0, 1E5, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.015, 1E3, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.7, 1E3, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.7, 5 * 1E3, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.15, 0.5, 1, 1.3] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.7, 1E5, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 13] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.1, 1E5, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [1.0, 1E5, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [10.0, 1E5, 1.0, n_elems, merge((; nlsolver_opts..., (linesearch=BackTracking()), method=:trust_region)), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.015, 1E3, 1.0, n_elems, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave]
+    [0.7, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
+    [0.7, 5 * 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.15, 0.5, 1, 1.3] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
+    [0.7, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 13] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
+    [0.1, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
+    [1.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
+    [10.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
+    [0.015, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
+    [0.7, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
+    [0.7, 5 * 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.15, 0.5, 1, 1.3] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
+    [0.7, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 13] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
+    [0.1, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
+    [1.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
+    [10.0, 1E5, 1.0, model, merge((; nlsolver_opts..., (linesearch=BackTracking()), method=:trust_region)), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
+    [0.015, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave]
   ]
 
 
 # Run cases
 outs = []
+outs2 = []
 for (i,case) in enumerate(cases)
-  out = GeMotion.simulate(name="$i", Pr=case[1], Ra=case[2], n=case[3], n_elems=case[4], nlsolver_opts=case[5], levels=case[6]; case[7]...)
-  push!(outs, out)
+  out2 = GeMotion.simulate(name="$i", Pr=case[1], Ra=case[2], n=case[3], model=case[4], nlsolver_opts=case[5]; case[7]...)
+  out = GeMotion.plot_all_unitsquare(
+    out.psih, out.Th, out.uh, model, "$i", case[6]
+  )
+  push!(outs2, out2)
+  push!(outs, (;Pr=case[1], Ra=case[2],out...))
 end
 
 
