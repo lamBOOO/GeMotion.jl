@@ -17,7 +17,6 @@
 - Discretization using Finite Elements in [Gridap.jl](https://github.com/gridap/Gridap.jl)
 - Solve nonlinear systems using Newtons method
 
-
 ## Installation
 
 - Clone the repository and open its folder
