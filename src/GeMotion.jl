@@ -1,7 +1,6 @@
 module GeMotion
 
-greet() = print("Hello World!")
-
 include("Solver.jl")
+include("Postprocessing.jl")
 
 end # module GeMotion
