@@ -30,12 +30,6 @@ out = GeMotion.simulate(
     linesearch=BackTracking(),
     ftol=1E-8,
     xtol=1E-10
-  ),
-  levels=(;
-    T=[0.1 * i for i = 1:10],
-    psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)),
-    Sth=5,
-    Sfl=5
   );
   (;
     T_diri_tags=[
