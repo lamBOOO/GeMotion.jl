@@ -6,12 +6,14 @@ using Gridap.Arrays
 using GridapGmsh
 using CairoMakie
 
+# TODO: Add tests
+
 # Setup model
 if haskey(ENV, "GITHUB_ACTIONS")
   model = GmshDiscreteModel(joinpath("co-annulus_unstructured_4.msh"))
   # model = GmshDiscreteModel(joinpath("co-annulus_structured_4.msh"))
 else
-  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_5.msh"))
+  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_4.msh"))
   # model = GmshDiscreteModel(joinpath("co-annulus_structured_5.msh"))
 end
 
@@ -74,6 +76,7 @@ for p in params
     yticks=LinearTicks(6),
     limits=(-ro, ro, -ro, ro)
   )
+  surface!(xs, ys, zs, shading = NoShading, colormap = :coolwarm, rasterize = true)
   contour!(
     xs, ys, zs, levels = p[3] * 2, labels=true, labelsize=15, color=:black
   )
@@ -105,7 +108,10 @@ for p in params
     yticks=LinearTicks(6),
     limits=(-ro, ro, -ro, ro)
   )
+  # surface!(xs, ys, zs, shading = NoShading, colormap = :heat, rasterize = true)
   contour!(xs, ys, zs, levels=0.05:0.1:0.95, labels=true, labelsize=15, color=:black
+  )
+  contour!(xs, ys, zs, levels=0.1:0.1:0.90, colormap = :coolwarm
   )
   arc!(Point2f(0), ro, -π, π, color = :black, linewidth = 2)
   arc!(Point2f(0), ri, -π, π, color = :black, linewidth = 2)
