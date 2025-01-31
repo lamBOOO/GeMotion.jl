@@ -7,8 +7,14 @@ using GridapGmsh
 using CairoMakie
 
 # Setup model
-model = GmshDiscreteModel(joinpath("co-annulus_unstructured_5.msh"))
-# model = GmshDiscreteModel(joinpath("co-annulus_structured_3.msh"))
+if haskey(ENV, "GITHUB_ACTIONS")
+  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_4.msh"))
+  # model = GmshDiscreteModel(joinpath("co-annulus_structured_4.msh"))
+else
+  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_5.msh"))
+  # model = GmshDiscreteModel(joinpath("co-annulus_structured_5.msh"))
+end
+
 
 params = [
   [0.6, :newton, 6],
