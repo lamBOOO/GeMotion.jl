@@ -2,8 +2,7 @@ using Gridap
 using Gridap.CellData
 using Gridap.Arrays
 using CairoMakie
-using MakieTeX
-using LineSearches: BackTracking, StrongWolfe
+using LineSearches
 
 using Random
 Random.seed!(1234)

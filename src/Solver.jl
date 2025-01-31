@@ -2,11 +2,9 @@ using Gridap
 using Gridap.CellData
 using Gridap.Arrays
 using CairoMakie
-using MakieTeX
 using LineSearches: BackTracking, StrongWolfe
 
 using Random
-Random.seed!(1234)
 
 export simulate
 
@@ -136,23 +134,27 @@ function simulate3(;
 
   res((u, p, T), (v, q, θ)) = (
     a((u, p, T), (v, q, θ))
-    + b(u, v)
+    + b(u, v)  # disable for newtonian
     + c(u, v) + d(u, T, θ)
   )
   jac((u, p, T), (du, dp, dT), (v, q, θ)) = (
     a((du, dp, dT), (v, q, θ))
-    + db(u, du, v)
+    + db(u, du, v)  # disable for newtonian
     + dc(u, du, v) + dd(u, du, T, dT, θ)
   )
 
   "Setup operator" |> println
   op = FEOperator(res, jac, X, Y)
+  # use AD, see https://gridap.github.io/Tutorials/stable/pages/t004_p_laplacian/
+  # op = FEOperator(res, X, Y)
 
   println("Setup nonlinear solver")
   nls = NLSolver(; nlsolver_opts...)
   solver = FESolver(nls)
 
   # random initial guess
+  println("random initial guess")
+  # Random.seed!(1234)
   # println("Solve nonlinear problem")
   # xu = rand(Float64,num_free_dofs(U))
   # # uh0 = FEFunction(U,xu)
@@ -166,7 +168,23 @@ function simulate3(;
   # ph = result[1][2]
   # Th = result[1][3]
 
+  # constant one initial guess
+  # println("constant one initial guess")
+  # println("Solve nonlinear problem")
+  # xu = ones(Float64,num_free_dofs(U))
+  # # uh0 = FEFunction(U,xu)
+  # xp = ones(Float64,num_free_dofs(P))
+  # # ph0 = FEFunction(P,xp)
+  # xT = ones(Float64,num_free_dofs(T))
+  # # Th0 = FEFunction(T,xT)
+  # init_guess = FEFunction(X, vcat(xu,xp,xT))
+  # result = solve!(init_guess,solver,op)
+  # uh = result[1][1]
+  # ph = result[1][2]
+  # Th = result[1][3]
+
   # zero initial guess
+  println("zero initial guess")
   println("Solve nonlinear problem")
   uh, ph, Th = solve(solver, op)
 
