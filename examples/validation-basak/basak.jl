@@ -2,7 +2,7 @@ using GeMotion
 using LineSearches: BackTracking, StrongWolfe, Static, HagerZhang, MoreThuente
 using Makie
 using Gridap
-using Gridap.Arrays  # return_cache
+using Gridap.Arrays  # for "return_cache"
 using CSV, DataFrames
 
 # Setup model
@@ -11,11 +11,10 @@ using CSV, DataFrames
 # (L7)      (L8)
 #  |         |
 # (P1)-(L5)-(P2)
-if haskey(ENV, "GITHUB_ACTIONS")
-  model = CartesianDiscreteModel((0, 1, 0, 1), (40, 40))
-else
-  model = CartesianDiscreteModel((0, 1, 0, 1), (100, 100))
-end
+model = CartesianDiscreteModel(
+  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (100, 100)
+)
+
 
 # solver settings
 nlsolver_opts = (;
@@ -45,13 +44,13 @@ cases =
     [0.1, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
     [1.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
     [10.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.015, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=vcat(1:1:4, 6, 8, 10:10:30, 0.01,0.1,0.5,0.25), Sfl=vcat(0.001, 0.003, 0.005,0.01:0.01:0.05)), uniform],
+    [0.015, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=vcat(1:1:4, 6, 8, 10:10:30, 0.01, 0.1, 0.5, 0.25), Sfl=vcat(0.001, 0.003, 0.005, 0.01:0.01:0.05)), uniform],
     [0.7, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
     [0.7, 5 * 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.15, 0.5, 1, 1.3] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
     [0.7, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 13] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
     [0.1, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
     [1.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [10.0, 1E5, 1.0, model, merge((; nlsolver_opts..., (linesearch=BackTracking()), method=:trust_region)), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
+    [10.0, 1E5, 1.0, model, merge((; nlsolver_opts..., (linesearch = BackTracking()), method=:trust_region)), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
     [0.015, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave]
   ]
 
@@ -59,13 +58,13 @@ cases =
 # Run cases
 outs = []
 outs2 = []
-for (i,case) in enumerate(cases)
+for (i, case) in enumerate(cases)
   out2 = GeMotion.simulate(name="$(i)_$(case[1])_$(case[2])", Pr=case[1], Ra=case[2], n=case[3], model=case[4], nlsolver_opts=case[5]; case[7]...)
   out = GeMotion.plot_all_unitsquare(
     out2.psih, out2.Th, out2.uh, model, "$(i)_$(case[1])_$(case[2])", case[6]
   )
   push!(outs2, out2)
-  push!(outs, (;Pr=case[1], Ra=case[2],out...))
+  push!(outs, (; Pr=case[1], Ra=case[2], out...))
 end
 
 # Nusselt number plot bottom
@@ -119,14 +118,12 @@ begin
 
   map(outs[[1, 3, 6]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs]
-      , label="Pr=$(o.Pr), Ra=$(o.Ra)"
+    lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)"
     )
   end
   map(outs[[8, 10, 13]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs]
-      , label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
+    lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
     )
   end
   axislegend(
@@ -174,7 +171,8 @@ begin
     yminorticksvisible=true,
     xticks=LinearTicks(5),
     yticks=LinearTicks(2),
-    ytickformat=values -> ["  $(Int(value))" for value in values],  # hack to get same tick width
+    # hack to get same tick width:
+    ytickformat=values -> ["  $(Int(value))" for value in values],
     limits=((0.1, 0.9), (0, 8))
   )
 
@@ -192,14 +190,12 @@ begin
 
   map(outs[[1, 3, 6]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs]
-      , label="Pr=$(o.Pr), Ra=$(o.Ra)"
+    lines!(xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)"
     )
   end
   map(outs[[8, 10, 13]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs]
-      , label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
+    lines!(xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
     )
   end
   axislegend(
@@ -214,8 +210,8 @@ begin
 end
 
 @info "relative errors bot"
-for i=1:6
-# begin; i = 3
+for i = 1:6
+  # begin; i = 3
   i_sim = [1, 3, 6, 8, 10, 13][i]
   otmp = outs[i_sim]
   cache_tmp = return_cache(otmp.Nu, Gridap.Point(0.0, 0.0))
@@ -230,7 +226,7 @@ for i=1:6
 end
 
 @info "relative errors side"
-for i=1:6
+for i = 1:6
   # begin; i = 1
   i_sim = [1, 3, 6, 8, 10, 13][i]
   otmp = outs[i_sim]
