@@ -44,23 +44,23 @@ simulate(;name="sim",Pr=1.0,Ra=1.0,n=1.0,model=CartesianDiscreteModel((0, 1, 0, 
 
 """
 function simulate3(;
-  name = "sim",
-  Pr = 1.0,
-  Ra = 1.0,
-  n = 1.0,
-  model = CartesianDiscreteModel((0, 1, 0, 1), (20, 20)),
-  nlsolver_opts = (;
-    show_trace = true,
-    method = :newton,
-    linesearch = BackTracking(),
-    ftol = 1E-8,
-    xtol = 11E-6
+  name="sim",
+  Pr=1.0,
+  Ra=1.0,
+  n=1.0,
+  model=CartesianDiscreteModel((0, 1, 0, 1), (20, 20)),
+  nlsolver_opts=(;
+    show_trace=true,
+    method=:newton,
+    linesearch=BackTracking(),
+    ftol=1E-8,
+    xtol=11E-6
   ),
-  T_diri_tags = [
+  T_diri_tags=[
     "leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint",
     "toprightpoint"
   ],
-  T_diri_expressions = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
+  T_diri_expressions=[0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
 )
   @info Pr, Ra, n, T_diri_tags, T_diri_expressions
   @info "Start"
