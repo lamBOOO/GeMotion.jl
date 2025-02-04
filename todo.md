@@ -9,3 +9,4 @@
 - Make mesh generic
 - Add some messages in solver
 - nlsolver_intit with zero or random with seed
+- Fix GLMakie CI failure with display
