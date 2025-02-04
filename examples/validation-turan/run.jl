@@ -4,10 +4,11 @@ using LineSearches: BackTracking, StrongWolfe
 
 
 # Setup model
+# TODO: Outsoure to a function
 # labelling:
 # 1-2-3-4 = botleftpoint-botrightpoint-topleftpoint-toprightpoint
 # 5-6-7-8 = botline-topline-leftline-rightline
-model = CartesianDiscreteModel((0, 1, 0, 1), (50, 50))
+model = CartesianDiscreteModel((0, 1, 0, 1), (100, 100))  # TODO: Make 200 for case 7 to get a sufficient result
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels, "botleftpoint", [1,])
 add_tag_from_tags!(labels, "botrightpoint", [2,])
@@ -72,9 +73,9 @@ end
 
 outs = []
 for (i,case) in enumerate(cases)
-  out = GeMotion.simulate(name="$i", Pr=case[1], Ra=case[2], n=case[3], model=case[4], nlsolver_opts=case[5]; case[7]...)
+  out = GeMotion.simulate(name="$(i)_$(case[1])_$(case[2])_$(case[3])", Pr=case[1], Ra=case[2], n=case[3], model=case[4], nlsolver_opts=case[5]; case[7]...)
   push!(outs, out)
   out2 = GeMotion.plot_all_unitsquare(
-    out.psih, out.Th, out.uh, case[4], "$i", case[6]
+    out.psih, out.Th, out.uh, case[4], "$(i)_$(case[1])_$(case[2])_$(case[3])", case[6]
   )
 end
