@@ -16,10 +16,7 @@ model_small = CartesianDiscreteModel((0, 1, 0, 1), (20, 20))  # CI: see later
 
 # Define boundary conditions
 turan = (;
-  T_diri_tags = [
-    "leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint",
-    "toprightpoint"
-    ],
+  T_diri_tags = [7, 8, 1, 2, 3, 4],
   T_diri_expressions = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
   V_diri_tags = [1, 2, 3, 4, 5, 6, 7, 8],
 )
