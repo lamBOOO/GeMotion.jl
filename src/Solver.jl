@@ -48,7 +48,7 @@ function simulate3(;
   Pr=1.0,
   Ra=1.0,
   n=1.0,
-  model=CartesianDiscreteModel((0, 1, 0, 1), (20, 20)),
+  model=CartesianDiscreteModel((0, 1, 0, 1), (10, 10)),
   nlsolver_opts=(;
     show_trace=true,
     method=:newton,
@@ -57,10 +57,10 @@ function simulate3(;
     xtol=11E-6
   ),
   T_diri_tags=[
-    "leftline", "rightline", "botleftpoint", "botrightpoint", "topleftpoint",
-    "toprightpoint"
+    1,2,3,4,5,6
   ],
   T_diri_expressions=[0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
+  V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8],
 )
   @info Pr, Ra, n, T_diri_tags, T_diri_expressions
   @info "Start"
@@ -74,7 +74,7 @@ function simulate3(;
   order = 2
   reffeᵤ = ReferenceFE(lagrangian, VectorValue{2,Float64}, order)
   V = TestFESpace(
-    model, reffeᵤ, conformity=:H1, labels=labels, dirichlet_tags=["all"]
+    model, reffeᵤ, conformity=:H1, labels=labels, dirichlet_tags=V_diri_tags
   )
 
   reffe_T = ReferenceFE(lagrangian, Float64, order)
@@ -191,7 +191,7 @@ function simulate3(;
   # stream function
   reffe_psi = ReferenceFE(lagrangian, Float64, 1)
   test_psi = TestFESpace(
-    model, reffe_psi, conformity=:H1, dirichlet_tags=["all"]
+    model, reffe_psi, conformity=:H1, dirichlet_tags=V_diri_tags
   )
   trial_psi = TrialFESpace(test_psi, 0.0)
   aa(u, v) = ∫(∇(v) ⋅ ∇(u)) * dΩ
@@ -201,7 +201,9 @@ function simulate3(;
   solver = LinearFESolver(ls)
   psih = solve(solver, op)
 
-  writevtk(Ωₕ, joinpath(name, "results.vtu"), cellfields=[
+  fname = joinpath(name, "results.vtu")
+  println("Write results to $(fname)")
+  writevtk(Ωₕ, fname, cellfields=[
     "uh" => uh, "ph" => ph, "Th" => Th, "psih" => psih
   ])
 

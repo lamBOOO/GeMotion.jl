@@ -48,7 +48,8 @@ for p in params
     );
     (;
       T_diri_tags = ["inner", "outer"],
-      T_diri_expressions = [1.0, 0.0]
+      T_diri_expressions = [1.0, 0.0],
+      V_diri_tags = ["all"]
     )...
   )
 
