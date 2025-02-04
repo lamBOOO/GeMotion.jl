@@ -9,7 +9,13 @@ Random.seed!(1234)
 
 export plot_all_unitsquare
 
+"""
+    plot_all_unitsquare2(psih, Th, uh, model, name, levels)
+
+TBW
+"""
 function plot_all_unitsquare2(psih, Th, uh, model, name, levels)
+  # TODO: Make named args
 
   Ωₕ = Triangulation(model)
   btrian = BoundaryTriangulation(model)
