@@ -153,7 +153,7 @@ function simulate3(;
   solver = FESolver(nls)
 
   # random initial guess
-  println("random initial guess")
+  # println("random initial guess")
   # Random.seed!(1234)
   # println("Solve nonlinear problem")
   # xu = rand(Float64,num_free_dofs(U))
