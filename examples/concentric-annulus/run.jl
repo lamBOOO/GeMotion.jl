@@ -10,20 +10,27 @@ using CairoMakie
 
 # Setup model
 if haskey(ENV, "GITHUB_ACTIONS")
-  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_4.msh"))
-  # model = GmshDiscreteModel(joinpath("co-annulus_structured_4.msh"))
+  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_3.msh"))
+  # model = GmshDiscreteModel(joinpath("co-annulus_structured_3.msh"))
 else
   model = GmshDiscreteModel(joinpath("co-annulus_unstructured_4.msh"))
-  # model = GmshDiscreteModel(joinpath("co-annulus_structured_5.msh"))
+  # model = GmshDiscreteModel(joinpath("co-annulus_structured_4.msh"))
 end
 
 
 params = [
   [0.6, :newton, 6],
+  [0.7, :newton, 8],
+  [0.8, :newton, 8],
+  [0.9, :newton, 8],
   [1.0, :trust_region, 8],
+  [1.1, :newton, 8],
+  [1.2, :newton, 8],
+  [1.3, :newton, 8],
   [1.4, :newton, 8],
 ]
 
+nusselts = []
 for p in params
   fname = "concentric-annulus" * "_$(p[1])"
   out = GeMotion.simulate(
@@ -118,4 +125,37 @@ for p in params
   display(f)
   save(joinpath(fname, "temperature.pdf"), f)
 
+
+  # mean Nusselt number over inner cylinder
+  nb = get_normal_vector(out.btrian)
+  Nu = Interpolable(
+    # get (-dT/dr) with a transformation to polar coordinates
+    (- ∇(out.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
+     searchmethod=KDTreeSearch(num_nearest_vertices=5)
+  )
+  cache = return_cache(Nu, Gridap.Point(0.0, 0.0))
+  phis_Nu = LinRange(0, 2*pi, 2*1000-1)[1:end-1]
+  nussel_number = [
+    evaluate!(cache, Nu, Gridap.Point([(2/3+0.0)*cos(p), (2/3+0.0)*sin(p)]))
+    for p in phis_Nu
+  ] |> x -> sum(x)/length(x)
+  println("Nusselt number at inner cylinder:", nussel_number)
+      push!(nusselts, nussel_number)
+
+end
+
+
+begin
+  f = Figure(
+    size=(250, 215), figure_padding=(0, 10, 0, 0),
+  )
+  Axis(
+    f[1, 1],
+    aspect=250/215,
+    xticks=0.6:0.2:1.4,
+    yticks=1.0:1.5:8.5,
+    limits = (0.6, 1.4, 1.0, 8.5)
+  )
+  scatterlines!(collect(0.6:0.1:1.4), nusselts)
+  display(f)
 end
