@@ -33,7 +33,8 @@ uniform = (;
 )
 wave = (;
   T_diri_tags=[5, 7, 8, 1, 2],
-  T_diri_expressions=[x -> sin(pi * x[1]), 0.0, 0.0, 0.0, 0.0]
+  T_diri_expressions=[x -> sin(pi * x[1]), 0.0, 0.0, 0.0, 0.0],
+  V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
 )
 
 cases =
