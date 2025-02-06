@@ -15,11 +15,11 @@ model = CartesianDiscreteModel(
   (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (100, 100)
 )
 
-
 # solver settings
 nlsolver_opts = (;
   show_trace=true,
   method=:trust_region,
+  linesearch=BackTracking(),
   ftol=1E-8,
   xtol=1E-50
 )
@@ -36,24 +36,42 @@ wave = (;
   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
 )
 
-cases =
-  [
-    [0.7, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.7, 5 * 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.15, 0.5, 1, 1.3] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.7, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 13] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.1, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [1.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [10.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), uniform],
-    [0.015, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=vcat(1:1:4, 6, 8, 10:10:30, 0.01, 0.1, 0.5, 0.25), Sfl=vcat(0.001, 0.003, 0.005, 0.01:0.01:0.05)), uniform],
-    [0.7, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.7, 5 * 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.15, 0.5, 1, 1.3] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.7, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 13] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.1, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 4, 7, 9] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [1.0, 1E5, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [10.0, 1E5, 1.0, model, merge((; nlsolver_opts..., (linesearch = BackTracking()), method=:trust_region)), (; T=[0.1 * i for i = 1:10], psi=([1, 5, 10, 14] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave],
-    [0.015, 1E3, 1.0, model, (; nlsolver_opts..., linesearch=BackTracking()), (; T=[0.1 * i for i = 1:10], psi=([0.01, 0.05, 0.1, 0.15] |> x -> vcat(x, -x)), Sth=5, Sfl=5), wave]
-  ]
+common_lvls = (; T=[0.1 * i for i = 1:10])
 
+paramlist = [
+  # Pr, Ra, n, psi_lvls, Sth_lvls, Sfl_lvls
+  (0.7, 1E3, 1.0, [0.01; 0.05:0.05:0.15], 5, 5, uniform);
+  (0.7, 5 * 1E3, 1.0, [0.15, 0.5, 1, 1.3], 5, 5, uniform)
+  (0.7, 1E5, 1.0, [1, 5, 10, 13], 5, 5, uniform)
+  (0.1, 1E5, 1.0, [1, 4, 7, 9], 5, 5, uniform)
+  (1.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, uniform)
+  (10.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, uniform)
+  (
+    0.015, 1E3, 1.0, [0.01; 0.05:0.05:0.15],
+    vcat(1:1:4, 6, 8, 10:10:30, 0.01, 0.1, 0.5, 0.25),
+    vcat(0.001, 0.003, 0.005, 0.01:0.01:0.05), uniform
+  )
+  (0.7, 1E3, 1.0, [0.01, 0.05, 0.1, 0.15], 5, 5, wave)
+  (0.7, 5 * 1E3, 1.0, [0.15, 0.5, 1, 1.3], 5, 5, wave)
+  (0.7, 1E5, 1.0, [1, 5, 10, 13], 5, 5, wave)
+  (0.1, 1E5, 1.0, [1, 4, 7, 9], 5, 5, wave)
+  (1.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, wave)
+  (10.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, wave)
+  (0.015, 1E3, 1.0, [0.01, 0.05, 0.1, 0.15], 5, 5, wave)
+]
+function mkcase(Pr, Ra, n, psi_vec, Sth_vec, Sfl_vec, bcs)
+  [
+    Pr, Ra, n, model, nlsolver_opts,
+    (;
+      common_lvls..., psi=vcat(psi_vec, -psi_vec), Sth=Sth_vec,
+      Sfl=Sfl_vec
+    ), bcs
+  ]
+end
+cases = [
+  mkcase(Pr, Ra, n, psi_vec, Sth_vec, Sfl_vec, bcs)
+  for (Pr, Ra, n, psi_vec, Sth_vec, Sfl_vec, bcs) in paramlist
+]
 
 # Run cases
 outs = []
@@ -118,12 +136,16 @@ begin
 
   map(outs[[1, 3, 6]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)"
+    lines!(
+      xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs],
+      label="Pr=$(o.Pr), Ra=$(o.Ra)"
     )
   end
   map(outs[[8, 10, 13]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
+    lines!(
+      xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs],
+      label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
     )
   end
   axislegend(
@@ -190,12 +212,16 @@ begin
 
   map(outs[[1, 3, 6]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)"
+    lines!(
+      xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs],
+      label="Pr=$(o.Pr), Ra=$(o.Ra)"
     )
   end
   map(outs[[8, 10, 13]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
-    lines!(xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs], label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
+    lines!(
+      xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs],
+      label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
     )
   end
   axislegend(
@@ -215,10 +241,19 @@ for i = 1:6
   i_sim = [1, 3, 6, 8, 10, 13][i]
   otmp = outs[i_sim]
   cache_tmp = return_cache(otmp.Nu, Gridap.Point(0.0, 0.0))
-  results_sim = [evaluate!(cache_tmp, otmp.Nu, Gridap.Point([x, 0])) for x in refdatabot[i][!, 1]]
+  results_sim = [
+    evaluate!(cache_tmp, otmp.Nu, Gridap.Point([x, 0]))
+    for x in refdatabot[i][!, 1]
+  ]
   diff = abs.(results_sim - refdatabot[i][!, 2])
-  l2norm_ref = sqrt(sum((refdatabot[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1]) .* refdatabot[i][!, 2][1:end-1] .^ 2))
-  l2norm_diff = sqrt(sum((refdatabot[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1]) .* diff[1:end-1] .^ 2))
+  l2norm_ref = sqrt(sum(
+    (refdatabot[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1])
+    .* refdatabot[i][!, 2][1:end-1] .^ 2
+  ))
+  l2norm_diff = sqrt(sum(
+    (refdatabot[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1])
+    .* diff[1:end-1] .^ 2
+  ))
   rel_l2err = l2norm_diff / l2norm_ref
   @show rel_l2err
   @assert rel_l2err < 0.0312
@@ -231,10 +266,19 @@ for i = 1:6
   i_sim = [1, 3, 6, 8, 10, 13][i]
   otmp = outs[i_sim]
   cache_tmp = return_cache(otmp.Nu, Gridap.Point(0.0, 0.0))
-  results_sim = -[evaluate!(cache_tmp, otmp.Nu, Gridap.Point([1, x])) for x in refdataside[i][!, 1]]
+  results_sim = -[
+    evaluate!(cache_tmp, otmp.Nu, Gridap.Point([1, x]))
+    for x in refdataside[i][!, 1]
+  ]
   diff = abs.(results_sim - refdataside[i][!, 2])
-  l2norm_ref = sqrt(sum((refdataside[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1]) .* refdataside[i][!, 2][1:end-1] .^ 2))
-  l2norm_diff = sqrt(sum((refdataside[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1]) .* diff[1:end-1] .^ 2))
+  l2norm_ref = sqrt(sum(
+    (refdataside[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1])
+    .* refdataside[i][!, 2][1:end-1] .^ 2
+  ))
+  l2norm_diff = sqrt(sum(
+    (refdataside[i][!, 1] |> x -> [x[i+1] - x[i] for i in 1:length(x)-1])
+    .* diff[1:end-1] .^ 2
+  ))
   rel_l2err = l2norm_diff / l2norm_ref
   @show rel_l2err
   @assert rel_l2err < 0.06
