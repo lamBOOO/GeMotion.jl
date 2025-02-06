@@ -36,3 +36,6 @@ julia --project -e 'import Pkg; Pkg.instantiate()'
 cd examples/validation-basak
 julia --project basak.jl
 ```
+
+## Remarks
+- Control number of threads within `NLSolve.jl` nonlinear solve: `export OPENBLAS_NUM_THREADS=2`
