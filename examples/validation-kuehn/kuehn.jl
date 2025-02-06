@@ -6,6 +6,7 @@ using Gridap.Arrays
 using GridapGmsh
 using CairoMakie
 using Colors
+using FileIO
 
 # TODO: Add tests
 
@@ -49,7 +50,6 @@ rs = LinRange(ri+eps, ro-eps, n_plot)
 phis = LinRange(0, 2*pi, 2*n_plot-1)
 xs = [r * cos(phi) for r in rs, phi in phis]
 ys = [r * sin(phi) for r in rs, phi in phis]
-zs = helper_psi.(broadcast((x, y) -> (x, y), xs, ys))
 
 search_method = KDTreeSearch(num_nearest_vertices=5)
 Thi = Interpolable(out.Th; searchmethod=search_method)
