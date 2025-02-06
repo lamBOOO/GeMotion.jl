@@ -11,7 +11,7 @@ using LineSearches: BackTracking, StrongWolfe
 # (L7)      (L8)
 #  |         |
 # (P1)-(L5)-(P2)
-model = CartesianDiscreteModel((0, 1, 0, 1), (100, 100))
+model = CartesianDiscreteModel((0, 1, 0, 1), (200, 200))
 model_small = CartesianDiscreteModel((0, 1, 0, 1), (20, 20))  # CI: see later
 
 # Define boundary conditions
