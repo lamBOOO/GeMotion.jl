@@ -84,7 +84,9 @@ for p in params
     yticks=LinearTicks(6),
     limits=(-ro, ro, -ro, ro)
   )
-  surface!(xs, ys, zs, shading = NoShading, colormap = :coolwarm, rasterize = true)
+  surface!(
+    xs, ys, zs, shading = NoShading, colormap = :coolwarm, rasterize = true
+  )
   contour!(
     xs, ys, zs, levels = p[3] * 2, labels=true, labelsize=15, color=:black
   )
@@ -116,8 +118,11 @@ for p in params
     yticks=LinearTicks(6),
     limits=(-ro, ro, -ro, ro)
   )
-  # surface!(xs, ys, zs, shading = NoShading, colormap = :heat, rasterize = true)
-  contour!(xs, ys, zs, levels=0.05:0.1:0.95, labels=true, labelsize=15, color=:black
+  # surface!(
+    # xs, ys, zs, shading = NoShading, colormap = :heat, rasterize = true
+  # )
+  contour!(
+    xs, ys, zs, levels=0.05:0.1:0.95, labels=true, labelsize=15, color=:black
   )
   contour!(xs, ys, zs, levels=0.1:0.1:0.90, colormap = :coolwarm
   )
