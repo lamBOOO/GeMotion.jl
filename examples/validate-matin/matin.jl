@@ -67,7 +67,7 @@ for (i, p) in enumerate(params)
   cmap_cold_to_hot_paraview = cgrad(colors, edges)
   ri = 2/3
   ro = 5/3
-  eps = 0.001
+  eps = haskey(ENV, "GITHUB_ACTIONS") ? 0.1 : 0.001
   rs = LinRange(ri+eps, ro-eps, 200)
   phis = LinRange(0, 2*pi, 2*200-1)
 
