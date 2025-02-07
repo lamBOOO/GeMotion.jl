@@ -5,6 +5,7 @@ using Gridap.CellData
 using Gridap.Arrays
 using GridapGmsh
 using CairoMakie
+using Colors
 
 # TODO: Add tests
 
