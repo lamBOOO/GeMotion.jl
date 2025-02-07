@@ -55,9 +55,18 @@ for (i, p) in enumerate(params)
   )
 
   # Postprocessing
+  edges = [
+    0.0, 0.45, 0.5, 0.55, 1.0
+  ]
+  colors = [
+    RGBA(0, 1, 1, 1.0), RGBA(0, 0, 1, 1.0), RGBA(0, 0, 0.5019608, 1.0),
+    RGBA(1, 0, 0, 1.0), RGBA(1, 1, 0, 1.0)
+  ]
+
+  cmap_cold_to_hot_paraview = cgrad(colors, edges)
   ri = 2/3
   ro = 5/3
-  eps = 0.02
+  eps = 0.001
   rs = LinRange(ri+eps, ro-eps, 200)
   phis = LinRange(0, 2*pi, 2*200-1)
 
@@ -119,14 +128,14 @@ for (i, p) in enumerate(params)
     yticks=LinearTicks(6),
     limits=(-ro, ro, -ro, ro)
   )
-  # surface!(
-    # xs, ys, zs, shading = NoShading, colormap = :heat, rasterize = true
-  # )
+  surface!(
+    xs, ys, zs, shading = NoShading, colormap = cmap_cold_to_hot_paraview,
+    rasterize = true
+  )
   contour!(
     xs, ys, zs, levels=0.05:0.1:0.95, labels=true, labelsize=15, color=:black
   )
-  contour!(xs, ys, zs, levels=0.1:0.1:0.90, colormap = :coolwarm
-  )
+  # contour!(xs, ys, zs, levels=0.1:0.1:0.90, colormap = :coolwarm)
   arc!(Point2f(0), ro, -π, π, color = :black, linewidth = 2)
   arc!(Point2f(0), ri, -π, π, color = :black, linewidth = 2)
   display(f)
@@ -152,19 +161,19 @@ for (i, p) in enumerate(params)
 end
 
 
-begin
-  f = Figure(
-    size=(250, 215), figure_padding=(0, 10, 0, 0),
-  )
-  Axis(
-    f[1, 1],
-    aspect=250/215,
-    xticks=0.6:0.2:1.4,
-    yticks=1.0:1.5:8.5,
-    limits = (0.6, 1.4, 1.0, 8.5)
-  )
-  scatterlines!(
-    collect(0.6:0.1:1.4), nusselts
-  )
-  display(f)
-end
+# begin
+#   f = Figure(
+#     size=(250, 215), figure_padding=(0, 10, 0, 0),
+#   )
+#   Axis(
+#     f[1, 1],
+#     aspect=250/215,
+#     xticks=0.6:0.2:1.4,
+#     yticks=1.0:1.5:8.5,
+#     limits = (0.6, 1.4, 1.0, 8.5)
+#   )
+#   scatterlines!(
+#     collect(0.6:0.1:1.4), nusselts
+#   )
+#   display(f)
+# end
