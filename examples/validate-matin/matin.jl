@@ -11,8 +11,8 @@ using Colors
 
 # Setup model
 if haskey(ENV, "GITHUB_ACTIONS")
-  model = GmshDiscreteModel(joinpath("meshes/co-annulus_unstructured_3.msh"))
-  # model = GmshDiscreteModel(joinpath("meshes/co-annulus_structured_3.msh"))
+  model = GmshDiscreteModel(joinpath("meshes/co-annulus_unstructured_4.msh"))
+  # model = GmshDiscreteModel(joinpath("meshes/co-annulus_structured_4.msh"))
 else
   model = GmshDiscreteModel(joinpath("meshes/co-annulus_unstructured_4.msh"))
   # model = GmshDiscreteModel(joinpath("meshes/co-annulus_structured_4.msh"))
