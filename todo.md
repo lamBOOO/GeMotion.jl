@@ -10,3 +10,5 @@
 - Add some messages in solver
 - nlsolver_intit with zero or random with seed
 - Fix GLMakie CI failure with display
+- Remove titles from the plots
+- Add docker compose file for momentum
