@@ -56,6 +56,7 @@ function simulate3(;
     ftol=1E-8,
     xtol=11E-6
   ),
+  jac_scaling=1.0,
   T_diri_tags=[
     1,2,3,4,5,6
   ],
@@ -137,7 +138,7 @@ function simulate3(;
     + b(u, v)  # disable for newtonian
     + c(u, v) + d(u, T, θ)
   )
-  jac((u, p, T), (du, dp, dT), (v, q, θ)) = (
+  jac((u, p, T), (du, dp, dT), (v, q, θ)) = jac_scaling * (
     a((du, dp, dT), (v, q, θ))
     + db(u, du, v)  # disable for newtonian
     + dc(u, du, v) + dd(u, du, T, dT, θ)

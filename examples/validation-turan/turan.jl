@@ -65,7 +65,7 @@ for (i,case) in enumerate(cases)
   name = "$(i)_$(case[1])_$(case[2])_$(case[3])"
   out = GeMotion.simulate(
     name=name, Pr=case[1], Ra=case[2], n=case[3], model=case[4],
-    nlsolver_opts=case[5]; case[7]...
+    jac_scaling = 1, nlsolver_opts=case[5]; case[7]...
   )
   push!(outs, out)
   out2 = GeMotion.plot_all_unitsquare(

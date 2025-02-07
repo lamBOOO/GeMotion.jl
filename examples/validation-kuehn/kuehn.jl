@@ -25,6 +25,7 @@ out = GeMotion.simulate(
   Ra=4.7e4,
   n=1.0,
   model=model,
+  jac_scaling = 1,
   nlsolver_opts=(;
     show_trace=true,
     method=:newton,

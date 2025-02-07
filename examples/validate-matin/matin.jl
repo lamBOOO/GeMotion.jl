@@ -10,11 +10,11 @@ using CairoMakie
 
 # Setup model
 if haskey(ENV, "GITHUB_ACTIONS")
-  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_3.msh"))
-  # model = GmshDiscreteModel(joinpath("co-annulus_structured_3.msh"))
+  model = GmshDiscreteModel(joinpath("meshes/co-annulus_unstructured_3.msh"))
+  # model = GmshDiscreteModel(joinpath("meshes/co-annulus_structured_3.msh"))
 else
-  model = GmshDiscreteModel(joinpath("co-annulus_unstructured_4.msh"))
-  # model = GmshDiscreteModel(joinpath("co-annulus_structured_4.msh"))
+  model = GmshDiscreteModel(joinpath("meshes/co-annulus_unstructured_4.msh"))
+  # model = GmshDiscreteModel(joinpath("meshes/co-annulus_structured_4.msh"))
 end
 
 
@@ -23,7 +23,7 @@ params = [
   [0.7, :newton, 8],
   [0.8, :newton, 8],
   [0.9, :newton, 8],
-  [1.0, :trust_region, 8],
+  [1.0, :newton, 8],
   [1.1, :newton, 8],
   [1.2, :newton, 8],
   [1.3, :newton, 8],
@@ -31,20 +31,21 @@ params = [
 ]
 
 nusselts = []
-for p in params
-  fname = "concentric-annulus" * "_$(p[1])"
+for (i, p) in enumerate(params)
+  fname = "$(i)_$(p[1])_$(string(p[2]))"
   out = GeMotion.simulate(
     name = fname,
     Pr = 100,
     Ra = 1E4,
     n = p[1],
     model = model,
+    jac_scaling = 1e-6,
     nlsolver_opts = (;
       show_trace = true,
       method = p[2],
       linesearch = BackTracking(),
-      ftol = 1E-8,
-      xtol = 1E-50
+      ftol = 1E-10,
+      xtol = 1E-300
     );
     (;
       T_diri_tags = ["inner", "outer"],
@@ -56,7 +57,7 @@ for p in params
   # Postprocessing
   ri = 2/3
   ro = 5/3
-  eps = 0.01
+  eps = 0.02
   rs = LinRange(ri+eps, ro-eps, 200)
   phis = LinRange(0, 2*pi, 2*200-1)
 
@@ -162,6 +163,8 @@ begin
     yticks=1.0:1.5:8.5,
     limits = (0.6, 1.4, 1.0, 8.5)
   )
-  scatterlines!(collect(0.6:0.1:1.4), nusselts)
+  scatterlines!(
+    collect(0.6:0.1:1.4), nusselts
+  )
   display(f)
 end
