@@ -46,7 +46,7 @@ for (i, p) in enumerate(params)
       method = p[2],
       linesearch = BackTracking(),
       ftol = 1E-10,
-      xtol = 1E-300
+      xtol = 1E-20
     );
     (;
       T_diri_tags = ["inner", "outer"],
