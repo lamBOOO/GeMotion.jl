@@ -10,11 +10,19 @@ using FileIO
 
 # Setup model
 if haskey(ENV, "GITHUB_ACTIONS")
-  model = GmshDiscreteModel(joinpath("meshes/co-annulus_unstructured_4.msh"))
-  # model = GmshDiscreteModel(joinpath("co-annulus_structured_3.msh"))
+  model = GmshDiscreteModel(
+    joinpath("../meshes/2.5/co-annulus_unstructured_4.msh")
+  )
+  # model = GmshDiscreteModel(
+  #   joinpath("../meshes/2.5/co-annulus_structured_3.msh")
+  # )
 else
-  model = GmshDiscreteModel(joinpath("meshes/co-annulus_unstructured_4.msh"))
-  # model = GmshDiscreteModel(joinpath("co-annulus_structured_4.msh"))
+  model = GmshDiscreteModel(
+    joinpath("../meshes/2.5/co-annulus_unstructured_4.msh")
+  )
+  # model = GmshDiscreteModel(
+  #   joinpath("../meshes/2.5/co-annulus_structured_4.msh")
+  # )
 end
 
 name = "out"
