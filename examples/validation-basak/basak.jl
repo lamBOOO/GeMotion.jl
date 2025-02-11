@@ -79,7 +79,8 @@ outs2 = []
 for (i, case) in enumerate(cases)
   out2 = GeMotion.simulate(
     name="$(i)_$(case[1])_$(case[2])", Pr=case[1], Ra=case[2], n=case[3],
-    model=case[4], jac_scaling = 1, nlsolver_opts=case[5]; case[7]...
+    model=case[4], jac_scaling = 1, nlsolver_opts=case[5],
+    nlsolver_custom_init_guess=[], nlsolver_init_guess_type=:zero,; case[7]...
   )
   out = GeMotion.plot_all_unitsquare(
     out2.psih, out2.Th, out2.uh, model, "$(i)_$(case[1])_$(case[2])", case[6]

@@ -41,6 +41,8 @@ out = GeMotion.simulate(
     ftol=1E-8,
     xtol=1E-50
   );
+  nlsolver_custom_init_guess=[],
+  nlsolver_init_guess_type=:zero,
   (;
     T_diri_tags=["inner", "outer"],
     T_diri_expressions=[1.0, 0.0],

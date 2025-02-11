@@ -56,6 +56,8 @@ for (i, p) in enumerate(params)
       ftol = 1E-10,
       xtol = 1E-20
     );
+    nlsolver_custom_init_guess=[],
+    nlsolver_init_guess_type=:zero,
     (;
       T_diri_tags = ["inner", "outer"],
       T_diri_expressions = [1.0, 0.0],

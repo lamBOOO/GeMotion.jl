@@ -25,6 +25,8 @@ out = GeMotion.simulate(
     ftol=1E-8,
     xtol=1E-10
   );
+  nlsolver_custom_init_guess=[],
+  nlsolver_init_guess_type=:zero,
   (;
     T_diri_tags=[7, 8, 1, 2, 3, 4],
     T_diri_expressions=[0.0, 1.0, 0.0, 1.0, 0.0, 1.0],

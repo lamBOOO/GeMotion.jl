@@ -56,6 +56,8 @@ function simulate3(;
     ftol=1E-8,
     xtol=11E-6
   ),
+  nlsolver_custom_init_guess=Float64[],
+  nlsolver_init_guess_type=:zero,
   jac_scaling=1.0,
   T_diri_tags=[
     1,2,3,4,5,6
@@ -153,41 +155,34 @@ function simulate3(;
   nls = NLSolver(; nlsolver_opts...)
   solver = FESolver(nls)
 
-  # random initial guess
-  # println("random initial guess")
-  # Random.seed!(1234)
-  # println("Solve nonlinear problem")
-  # xu = rand(Float64,num_free_dofs(U))
-  # # uh0 = FEFunction(U,xu)
-  # xp = rand(Float64,num_free_dofs(P))
-  # # ph0 = FEFunction(P,xp)
-  # xT = rand(Float64,num_free_dofs(T))
-  # # Th0 = FEFunction(T,xT)
-  # init_guess = FEFunction(X, vcat(xu,xp,xT))
-  # result = solve!(init_guess,solver,op)
-  # uh = result[1][1]
-  # ph = result[1][2]
-  # Th = result[1][3]
-
-  # constant one initial guess
-  # println("constant one initial guess")
-  # println("Solve nonlinear problem")
-  # xu = ones(Float64,num_free_dofs(U))
-  # # uh0 = FEFunction(U,xu)
-  # xp = ones(Float64,num_free_dofs(P))
-  # # ph0 = FEFunction(P,xp)
-  # xT = ones(Float64,num_free_dofs(T))
-  # # Th0 = FEFunction(T,xT)
-  # init_guess = FEFunction(X, vcat(xu,xp,xT))
-  # result = solve!(init_guess,solver,op)
-  # uh = result[1][1]
-  # ph = result[1][2]
-  # Th = result[1][3]
-
-  # zero initial guess
-  println("zero initial guess")
   println("Solve nonlinear problem")
-  uh, ph, Th = solve(solver, op)
+  if nlsolver_init_guess_type == :zero
+    println("zero initial guess")
+    result = solve(solver, op)
+  elseif nlsolver_init_guess_type == :ones
+    println("constant one initial guess")
+    xu = ones(Float64,num_free_dofs(U))
+    xp = ones(Float64,num_free_dofs(P))
+    xT = ones(Float64,num_free_dofs(T))
+    # uh0 = FEFunction(U,xu)
+    # ph0 = FEFunction(P,xp)
+    # Th0 = FEFunction(T,xT)
+    init_guess = FEFunction(X, vcat(xu,xp,xT))
+    result = solve!(init_guess,solver,op)[1]
+  elseif nlsolver_init_guess_type == :random
+    println("random initial guess")
+    Random.seed!(1234)
+    xu = rand(Float64, num_free_dofs(U))
+    xp = rand(Float64, num_free_dofs(P))
+    xT = rand(Float64, num_free_dofs(T))
+    init_guess = FEFunction(X, vcat(xu, xp, xT))
+    result = solve!(init_guess, solver, op)[1]
+  elseif nlsolver_init_guess_type == :custom
+    println("custom initial guess")
+    init_guess = FEFunction(X, nlsolver_custom_init_guess)
+    result = solve!(init_guess,solver,op)[1]
+  end
+  uh, ph, Th = result
 
   # stream function
   reffe_psi = ReferenceFE(lagrangian, Float64, 1)
@@ -212,6 +207,7 @@ function simulate3(;
     uh=uh,
     ph=ph,
     Th=Th,
+    result=result,
     psih=psih,
     btrian=btrian,
     model=model,
