@@ -66,7 +66,7 @@ out1 = GeMotion.simulate(
     # extended_trace=true
   );
   nlsolver_custom_init_guess=[],
-  nlsolver_init_guess_type=:zero,1
+  nlsolver_init_guess_type=:zero,
   wave...
 )
 
