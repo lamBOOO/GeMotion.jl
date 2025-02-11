@@ -12,17 +12,17 @@ using Colors
 # Setup model
 if haskey(ENV, "GITHUB_ACTIONS")
   model = GmshDiscreteModel(
-    joinpath("../2.5/meshes/co-annulus_unstructured_4.msh")
+    joinpath("../meshes/2.5/co-annulus_unstructured_4.msh")
   )
   # model = GmshDiscreteModel(
-  #   joinpath("../2.5/meshes/co-annulus_structured_4.msh")
+  #   joinpath("../meshes/2.5/co-annulus_structured_4.msh")
   # )
 else
   model = GmshDiscreteModel(
-    joinpath("../2.5/meshes/co-annulus_unstructured_4.msh")
+    joinpath("../meshes/2.5/co-annulus_unstructured_4.msh")
   )
   # model = GmshDiscreteModel(
-  #   joinpath("../2.5/meshes/co-annulus_structured_4.msh")
+  #   joinpath("../meshes/2.5/co-annulus_structured_4.msh")
   # )
 end
 
