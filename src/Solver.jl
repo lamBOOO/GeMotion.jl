@@ -144,7 +144,10 @@ function simulate3(;
     a((du, dp, dT), (v, q, θ))
     + db(u, du, v)  # disable for newtonian
     + dc(u, du, v) + dd(u, du, T, dT, θ)
+    # + 0 * (∫(du ⋅ v)dΩ + ∫(dT * θ)dΩ + ∫(dp * q)dΩ)
   )
+
+  res_op = FEOperator(res, X, Y)
 
   "Setup operator" |> println
   op = FEOperator(res, jac, X, Y)
@@ -152,7 +155,8 @@ function simulate3(;
   # op = FEOperator(res, X, Y)
 
   println("Setup nonlinear solver")
-  nls = NLSolver(; nlsolver_opts...)
+  lin_solver = LUSolver()
+  nls = NLSolver(lin_solver; nlsolver_opts...)
   solver = FESolver(nls)
 
   println("Solve nonlinear problem")
@@ -213,7 +217,8 @@ function simulate3(;
     model=model,
     Ωₕ=Ωₕ,
     Pr=Pr,
-    Ra=Ra
-  )
+    Ra=Ra,
+    res_op=res_op,
+    )
 end
 simulate = simulate3
