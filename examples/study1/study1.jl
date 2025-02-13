@@ -11,7 +11,7 @@ using FileIO
 
 # 1)
 model_square = CartesianDiscreteModel(
-(0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (40, 40)
+(0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (120, 120)
 )
 # BCs
 uniform = (;
@@ -112,12 +112,12 @@ end
 
 # 2)
 if haskey(ENV, "GITHUB_ACTIONS")
-  model_annulus = GmshDiscreteModel(
-    joinpath("../meshes/2.5/co-annulus_unstructured_2.msh")
-  )
   # model_annulus = GmshDiscreteModel(
-  #   joinpath("../meshes/2.5/co-annulus_structured_3.msh")
+  #   joinpath("../meshes/2.5/co-annulus_unstructured_2.msh")
   # )
+  model_annulus = GmshDiscreteModel(
+    joinpath("../meshes/2.5/co-annulus_structured_2.msh")
+  )
 else
   # model_annulus = GmshDiscreteModel(
   #   joinpath("../meshes/2.5/co-annulus_unstructured_3.msh")
