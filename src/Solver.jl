@@ -185,6 +185,8 @@ function simulate3(;
     println("custom initial guess")
     init_guess = FEFunction(X, nlsolver_custom_init_guess)
     result = solve!(init_guess,solver,op)[1]
+  else
+    error("Unknown initial guess type: " * string(nlsolver_init_guess_type))
   end
   uh, ph, Th = result
 
@@ -201,16 +203,34 @@ function simulate3(;
   solver = LinearFESolver(ls)
   psih = solve(solver, op)
 
+  # entropies, see:
+  # R. S. Kaluri, T. Basak, Entropy Generation Minimization Versus Thermal
+  # Mixing Due to Natural Convection in Differentially and Discretely Heated
+  # Square Cavities, Numerical Heat Transfer, Part A: Applications 58 (6)
+  # (2010) 475–504. doi:10.1080/10407782.2010.511982.
+  Sth = interpolate(
+    ∇(Th) |> x -> inner(x, x),
+    TestFESpace(model, ReferenceFE(lagrangian, Float64, 2), conformity=:H1)
+  )
+  Sfl = interpolate(∇(uh) |> x -> 1E-4 * (
+      2 * (inner(x .* x, TensorValue(1, 0, 0, 1)))
+      +
+      ((inner(x, TensorValue(0, 1, 1, 0))) |> x -> x * x)
+    ), TestFESpace(model, ReferenceFE(lagrangian, Float64, 2), conformity=:H1))
+
   fname = joinpath(name, "results.vtu")
   println("Write results to $(fname)")
   writevtk(Ωₕ, fname, cellfields=[
-    "uh" => uh, "ph" => ph, "Th" => Th, "psih" => psih
+    "uh" => uh, "ph" => ph, "Th" => Th, "psih" => psih,
+    "Sth" => Sth, "Sfl" => Sfl
   ])
 
   return (
     uh=uh,
     ph=ph,
     Th=Th,
+    Sth=Sth,
+    Sfl=Sfl,
     result=result,
     psih=psih,
     btrian=btrian,
