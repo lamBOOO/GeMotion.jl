@@ -54,5 +54,5 @@ Transfinite Curve(2200) = p * point_radial + 1 Using Bump bump;
 Transfinite Curve(2201) = p * point_radial + 1 Using Bump bump;
 Transfinite Surface(4000) Alternate;
 Transfinite Surface(4001) Alternate;
-Recombine Surface(4000);
-Recombine Surface(4001);
+// Recombine Surface(4000);
+// Recombine Surface(4001);
