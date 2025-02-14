@@ -43,7 +43,7 @@ cases = [
   for (n, model, bcs) in paramlist
 ]
 
-outs1 = []
+# outs1 = []
 out = nothing
 for (i, case) in enumerate(cases)
   name = "square_$(i)_$(case.n)"
@@ -103,10 +103,58 @@ for (i, case) in enumerate(cases)
   ) |> display
 end
 
+begin
+  scale = 1.5
+  f = Figure(
+    size=scale .* (600, 250),
+    figure_padding= (0,10,0,0)
+  )
+  nplot_Nu = 100
+  xs_Nu = LinRange(0.0, 1.0, 2*nplot_Nu)[1:end]
 
+  map(enumerate([1:3,4:6])) do (i_indices, indices)
 
+    ax = Axis(
+      f[1, i_indices],
+      title=i_indices==1 ? "inner wall, uniform heating" : "inner wall, non-uniform heating",
+      xlabel="angle ϕ",
+      ylabel="Nusselt number Nu",
+      xminorticksvisible=true,
+      yminorticksvisible=true,
+      xticks=LinearTicks(5),
+      yticks=LinearTicks(5),
+      limits=((0.0, 1.0), (0,20))
+    )
 
-
+    map(outs1[indices]) do o
+      @info "hi"
+      nb = get_normal_vector(o.btrian)
+      NUU = Interpolable(
+        # get (-dT/dr) with a transformation to polar coordinates
+        (- ∇(o.Th) ⋅ (x->VectorValue([0.0,1.0])));
+          searchmethod=KDTreeSearch(num_nearest_vertices=500)
+      )
+      cache = return_cache(NUU, Gridap.Point(0.0, 0.0))
+      Nu_inner = [
+        evaluate!(cache, NUU, Gridap.Point([x, 0.0]))
+        for x in xs_Nu
+      ]
+      lines!(
+        xs_Nu,
+        Nu_inner,
+        label="n = $(o.n)",
+      )
+    end
+    axislegend(
+      labelsize=10,
+      position=:lt,
+      orientation=:horizontal,
+      nbanks=1,
+    )
+  end
+  f |> display
+  save("nusselt_number_square.pdf", f)
+end
 
 
 
@@ -154,7 +202,7 @@ cases = [
   for (n, model, bcs, Sfl_lvls) in paramlist
 ]
 
-outs2 = []
+# outs2 = []
 for (i, case) in enumerate(cases)
   name = "annulus_$(i)_$(case.n)"
 
