@@ -43,7 +43,7 @@ cases = [
   for (n, model, bcs) in paramlist
 ]
 
-# outs1 = []
+outs1 = []
 out = nothing
 for (i, case) in enumerate(cases)
   name = "square_$(i)_$(case.n)"
@@ -202,7 +202,7 @@ cases = [
   for (n, model, bcs, Sfl_lvls) in paramlist
 ]
 
-# outs2 = []
+outs2 = []
 for (i, case) in enumerate(cases)
   name = "annulus_$(i)_$(case.n)"
 
