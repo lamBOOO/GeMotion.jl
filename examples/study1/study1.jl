@@ -117,7 +117,7 @@ begin
     ax = Axis(
       f[1, i_indices],
       title=i_indices==1 ? "inner wall, uniform heating" : "inner wall, non-uniform heating",
-      xlabel="angle ϕ",
+      xlabel="position x",
       ylabel="Nusselt number Nu",
       xminorticksvisible=true,
       yminorticksvisible=true,
