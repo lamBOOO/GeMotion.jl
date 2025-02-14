@@ -225,6 +225,9 @@ function plot_all_unitsquare2(psih, Th, uh, model, name, levels)
   Nu = Interpolable(
     (∇(Th) ⋅ nb); searchmethod=KDTreeSearch(num_nearest_vertices=5)
   )
+  # writevtk(Ωₕ, joinpath(name, "nusselt.vtu"), cellfields=[
+  #   "Nu" => Nu
+  # ])
 
   # entropies
   Sth = interpolate(

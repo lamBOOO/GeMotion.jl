@@ -81,6 +81,7 @@ function simulate3(;
   )
 
   reffe_T = ReferenceFE(lagrangian, Float64, order)
+  # reffe_T = ReferenceFE(lagrangian, Float64, order-1)
 
   reffeₚ = ReferenceFE(lagrangian, Float64, order - 1; space=:P)
   Q = TestFESpace(model, reffeₚ, conformity=:L2, constraint=:zeromean)
@@ -238,6 +239,7 @@ function simulate3(;
     Ωₕ=Ωₕ,
     Pr=Pr,
     Ra=Ra,
+    n=n,
     res_op=res_op,
     )
 end

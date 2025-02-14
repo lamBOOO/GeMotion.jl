@@ -43,7 +43,7 @@ cases = [
   for (n, model, bcs) in paramlist
 ]
 
-outs = []
+outs1 = []
 out = nothing
 for (i, case) in enumerate(cases)
   name = "square_$(i)_$(case.n)"
@@ -66,7 +66,7 @@ for (i, case) in enumerate(cases)
     nlsolver_init_guess_type=:zero,
     case.bcs...
   )
-  push!(outs, out)
+  push!(outs1, out)
   GeMotion.contourplot_unitsquare(;
     fun=out.psih,
     name=name*"/psi",
@@ -112,19 +112,19 @@ end
 
 # 2)
 if haskey(ENV, "GITHUB_ACTIONS")
-  # model_annulus = GmshDiscreteModel(
-  #   joinpath("../meshes/2.5/co-annulus_unstructured_2.msh")
-  # )
   model_annulus = GmshDiscreteModel(
-    joinpath("../meshes/2.5/co-annulus_structured_2.msh")
+    joinpath("../meshes/2.5/co-annulus_unstructured_4.msh")
   )
+  # model_annulus = GmshDiscreteModel(
+  #   joinpath("../meshes/2.5/co-annulus_structured_2.msh")
+  # )
 else
-  # model_annulus = GmshDiscreteModel(
-  #   joinpath("../meshes/2.5/co-annulus_unstructured_3.msh")
-  # )
   model_annulus = GmshDiscreteModel(
-    joinpath("../meshes/2.5/co-annulus_structured_5.msh")
+    joinpath("../meshes/2.5/co-annulus_unstructured_6.msh")
   )
+  # model_annulus = GmshDiscreteModel(
+  #   joinpath("../meshes/2.5/co-annulus_structured_6.msh")
+  # )
 end
 uniform_annulus = (;
   T_diri_tags=["inner", "outer"],
@@ -154,7 +154,7 @@ cases = [
   for (n, model, bcs, Sfl_lvls) in paramlist
 ]
 
-outs = []
+outs2 = []
 for (i, case) in enumerate(cases)
   name = "annulus_$(i)_$(case.n)"
 
@@ -199,8 +199,7 @@ for (i, case) in enumerate(cases)
     nlsolver_init_guess_type=:custom,
     case.bcs...
   )
-  push!(outs, out)
-  # opts=(;ri=5/8,ro=13/8,eps=0.01,n_plot=100)
+  push!(outs2, out)
   opts=(;ri=2/3,ro=5/3,eps=0.01,n_plot=100)
   GeMotion.contourplot_coannulus(
     ;opts...,
@@ -232,4 +231,58 @@ for (i, case) in enumerate(cases)
     contourargs=(;levels=case.Sfl_lvls),
     surfaceargs=(;colormap=:Blues)
   ) |> display
+end
+
+begin
+  scale = 1.5
+  f = Figure(
+    size=scale .* (600, 250),
+    figure_padding= (0,10,0,0)
+  )
+  nplot_Nu = 100
+  phis_Nu = LinRange(0, 2*pi, 2*nplot_Nu)[1:end]
+
+  map(enumerate([1:3,4:6])) do (i_indices, indices)
+
+    ax = Axis(
+      f[1, i_indices],
+      title=i_indices==1 ? "inner wall, uniform heating" : "inner wall, non-uniform heating",
+      xlabel="angle ϕ",
+      ylabel="Nusselt number Nu",
+      xminorticksvisible=true,
+      yminorticksvisible=true,
+      xticks = (0:1/2*pi:2*pi, ["0", "π/2", "π", "3π/2", "2π"]),
+      yticks=LinearTicks(5),
+      limits=((0.0, 2*pi), (-0.5,10.5))
+    )
+
+    map(outs2[indices]) do o
+      nb = get_normal_vector(o.btrian)
+      Nu = Interpolable(
+        # get (-dT/dr) with a transformation to polar coordinates
+        (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
+          searchmethod=KDTreeSearch(num_nearest_vertices=50)
+      )
+      cache = return_cache(Nu, Gridap.Point(0.0, 0.0))
+      dist = 0.0
+      ri = 2/3
+      Nu_inner = [
+        evaluate!(cache, Nu, Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)]))
+        for p in phis_Nu
+      ]
+      lines!(
+        phis_Nu,
+        Nu_inner,
+        label="n = $(o.n)",
+      )
+    end
+    axislegend(
+      labelsize=10,
+      position=:lt,
+      orientation=:horizontal,
+      nbanks=1,
+    )
+  end
+  f |> display
+  save("nusselt_number_annulus.pdf", f)
 end
