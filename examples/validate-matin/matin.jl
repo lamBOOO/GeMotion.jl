@@ -39,7 +39,7 @@ params = [
   [1.4, :newton, 8],
 ]
 
-nusselts = []
+avg_nu_numbers = []
 for (i, p) in enumerate(params)
   fname = "$(i)_$(p[1])_$(string(p[2]))"
   out = GeMotion.simulate(
@@ -162,29 +162,31 @@ for (i, p) in enumerate(params)
   )
   cache = return_cache(Nu, Gridap.Point(0.0, 0.0))
   phis_Nu = LinRange(0, 2*pi, 2*1000-1)[1:end-1]
-  nussel_number = [
+  nusselt_number = [
     evaluate!(cache, Nu, Gridap.Point([(2/3+0.0)*cos(p), (2/3+0.0)*sin(p)]))
     for p in phis_Nu
-  ] |> x -> sum(x)/length(x)
-  println("Nusselt number at inner cylinder:", nussel_number)
-      push!(nusselts, nussel_number)
+  ]
+  avg_nu_number = sum(nusselt_number)/length(nusselt_number)
+  println("Nusselt number at inner cylinder:", avg_nu_number)
+  push!(avg_nu_numbers, avg_nu_number)
+  lines(phis_Nu, nusselt_number) |> display
 
 end
 
 
-# begin
-#   f = Figure(
-#     size=(250, 215), figure_padding=(0, 10, 0, 0),
-#   )
-#   Axis(
-#     f[1, 1],
-#     aspect=250/215,
-#     xticks=0.6:0.2:1.4,
-#     yticks=1.0:1.5:8.5,
-#     limits = (0.6, 1.4, 1.0, 8.5)
-#   )
-#   scatterlines!(
-#     collect(0.6:0.1:1.4), nusselts
-#   )
-#   display(f)
-# end
+begin
+  f = Figure(
+    size=(250, 215), figure_padding=(0, 10, 0, 0),
+  )
+  Axis(
+    f[1, 1],
+    aspect=250/215,
+    xticks=0.6:0.2:1.4,
+    yticks=1.0:1.5:8.5,
+    limits = (0.6, 1.4, 1.0, 8.5)
+  )
+  scatterlines!(
+    collect(0.6:0.1:1.4), avg_nu_numbers
+  )
+  display(f)
+end
