@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for p in 1 2 3 4 5 6
+for p in 1 2 3 4 5 6 7
 do
   for name in co-annulus_structured co-annulus_unstructured
   do

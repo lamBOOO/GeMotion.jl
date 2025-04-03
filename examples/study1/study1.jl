@@ -7,173 +7,257 @@ using GridapGmsh
 using CairoMakie
 using Colors
 using FileIO
+using CSV, DataFrames
+
+# # 1)
+# model_square = CartesianDiscreteModel(
+#   (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (200, 200)
+# )
+# model_squares = [CartesianDiscreteModel(
+#   (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (40*i, 40*i)
+# ) for i in 1:5]
+# # BCs
+# uniform = (;
+#   T_diri_tags=[5, 7, 8, 1, 2],
+#   T_diri_expressions=[1.0, 0.0, 0.0, 0.5, 0.5],
+#   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
+# )
+# wave = (;
+#   T_diri_tags=[5, 7, 8, 1, 2],
+#   T_diri_expressions=[x -> sin(pi * x[1]), 0.0, 0.0, 0.0, 0.0],
+#   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
+# )
 
 
-# 1)
-model_square = CartesianDiscreteModel(
-(0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (120, 120)
-)
-# BCs
-uniform = (;
-  T_diri_tags=[5, 7, 8, 1, 2],
-  T_diri_expressions=[1.0, 0.0, 0.0, 0.5, 0.5],
-  V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
-)
-wave = (;
-  T_diri_tags=[5, 7, 8, 1, 2],
-  T_diri_expressions=[x -> sin(pi * x[1]), 0.0, 0.0, 0.0, 0.0],
-  V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
-)
+# paramlist = [
+#   # n, model, bcs
+#   (0.6, model_square, uniform)
+#   (1.0, model_square, uniform)
+#   (1.4, model_square, uniform)
+#   (0.6, model_square, wave)
+#   (1.0, model_square, wave)
+#   (1.4, model_square, wave)
+#   [(0.6, model_squares[i], wave) for i=1:length(model_squares)]...
+# ]
+# function mkcase(n, model, bcs)
+#   (;n, model, bcs)
+# end
+# cases = [
+#   mkcase(n, model, bcs)
+#   for (n, model, bcs) in paramlist
+# ]
 
+# outs1 = []
+# out = nothing
+# for (i, case) in enumerate(cases)
+#   name = "square_$(i)_$(case.n)"
+#   out = GeMotion.simulate(
+#     name=name,
+#     Pr=100,
+#     Ra=1e4,
+#     n=case.n,
+#     model=case.model,
+#     jac_scaling = 1,
+#     nlsolver_opts=(;
+#       show_trace=true,
+#       method=:newton,
+#       linesearch=BackTracking(),
+#       ftol=1E-8,
+#       xtol=1E-50,
+#       iterations=50,
+#     );
+#     nlsolver_custom_init_guess=[],
+#     nlsolver_init_guess_type=:zero,
+#     case.bcs...
+#   )
+#   push!(outs1, out)
+#   GeMotion.contourplot_unitsquare(;
+#     fun=out.psih,
+#     name=name*"/psi",
+#     contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
+#     surfaceargs=(;
+#       colormap=:coolwarm
+#     )
+#   ) |> display
+#   GeMotion.contourplot_unitsquare(;
+#     fun=out.Th,
+#     name=name*"/T",
+#     contourargs=(;levels=0:0.1:1),
+#     surfaceargs=(;
+#       colormap=cmap_cold_to_hot_paraview()
+#     )
+#   ) |> display
+#   GeMotion.contourplot_unitsquare(;
+#     fun=out.Sth,
+#     name=name*"/Sth",
+#     contourargs=(;levels=[4.0^i for i in -1:1:3]),
+#     surfaceargs=(;
+#     colormap=:Reds,
+#       # colorscale=x->min(x,100)
+#     )
+#   ) |> display
+#   GeMotion.contourplot_unitsquare(;
+#     fun=out.Sfl,
+#     name=name*"/Sfl",
+#     contourargs=(;levels=[4.0^i for i in -2:1:3]),
+#     surfaceargs=(;
+#     colormap=:Blues,
+#       # colorrange=(0,100)
+#     )
+#   ) |> display
+# end
 
-paramlist = [
-  # n, model, bcs
-  (0.6, model_square, uniform)
-  (1.0, model_square, uniform)
-  (1.4, model_square, uniform)
-  (0.6, model_square, wave)
-  (1.0, model_square, wave)
-  (1.4, model_square, wave)
-]
-function mkcase(n, model, bcs)
-  (;n, model, bcs)
-end
-cases = [
-  mkcase(n, model, bcs)
-  for (n, model, bcs) in paramlist
-]
+# begin
+#   scale = 1.5
+#   f = Figure(
+#     size=scale .* (600, 250),
+#     figure_padding= (0,10,0,0)
+#   )
+#   nplot_Nu = 100
+#   xs_Nu = LinRange(0.0, 1.0, 2*nplot_Nu)[1:end]
 
-outs1 = []
-out = nothing
-for (i, case) in enumerate(cases)
-  name = "square_$(i)_$(case.n)"
-  out = GeMotion.simulate(
-    name=name,
-    Pr=100,
-    Ra=1e4,
-    n=case.n,
-    model=case.model,
-    jac_scaling = 1,
-    nlsolver_opts=(;
-      show_trace=true,
-      method=:newton,
-      linesearch=BackTracking(),
-      ftol=1E-8,
-      xtol=1E-50,
-      iterations=50,
-    );
-    nlsolver_custom_init_guess=[],
-    nlsolver_init_guess_type=:zero,
-    case.bcs...
-  )
-  push!(outs1, out)
-  GeMotion.contourplot_unitsquare(;
-    fun=out.psih,
-    name=name*"/psi",
-    contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
-    surfaceargs=(;
-      colormap=:coolwarm
-    )
-  ) |> display
-  GeMotion.contourplot_unitsquare(;
-    fun=out.Th,
-    name=name*"/T",
-    contourargs=(;levels=0:0.1:1),
-    surfaceargs=(;
-      colormap=cmap_cold_to_hot_paraview()
-    )
-  ) |> display
-  GeMotion.contourplot_unitsquare(;
-    fun=out.Sth,
-    name=name*"/Sth",
-    contourargs=(;levels=[4.0^i for i in -1:1:3]),
-    surfaceargs=(;
-    colormap=:Reds,
-      # colorscale=x->min(x,100)
-    )
-  ) |> display
-  GeMotion.contourplot_unitsquare(;
-    fun=out.Sfl,
-    name=name*"/Sfl",
-    contourargs=(;levels=[4.0^i for i in -2:1:3]),
-    surfaceargs=(;
-    colormap=:Blues,
-      # colorrange=(0,100)
-    )
-  ) |> display
-end
+#   map(enumerate([
+#     1:3,
+#     4:6
+#   ])) do (i_indices, indices)
 
-begin
-  scale = 1.5
-  f = Figure(
-    size=scale .* (600, 250),
-    figure_padding= (0,10,0,0)
-  )
-  nplot_Nu = 100
-  xs_Nu = LinRange(0.0, 1.0, 2*nplot_Nu)[1:end]
+#     ax = Axis(
+#       f[1, i_indices],
+#       title=i_indices==1 ? "inner wall, uniform heating" : "inner wall, non-uniform heating",
+#       xlabel="position x",
+#       ylabel="Nusselt number Nu",
+#       xminorticksvisible=true,
+#       yminorticksvisible=true,
+#       xticks=LinearTicks(5),
+#       yticks=LinearTicks(5),
+#       limits=((0.0, 1.0), (0,20))
+#     )
 
-  map(enumerate([1:3,4:6])) do (i_indices, indices)
+#     map(outs1[indices]) do o
+#       @info "hi"
+#       nb = get_normal_vector(o.btrian)
+#       NUU = Interpolable(
+#         # get (-dT/dr) with a transformation to polar coordinates
+#         (- ∇(o.Th) ⋅ (x->VectorValue([0.0,1.0])));
+#           searchmethod=KDTreeSearch(num_nearest_vertices=500)
+#       )
+#       cache = return_cache(NUU, Gridap.Point(0.0, 0.0))
+#       Nu_inner = [
+#         evaluate!(cache, NUU, Gridap.Point([x, 0.0]))
+#         for x in xs_Nu
+#       ]
+#       @info sum(Nu_inner[1:end-1])/length(Nu_inner[1:end-1])
+#       lines!(
+#         xs_Nu,
+#         Nu_inner,
+#         label="n = $(o.n)",
+#       )
+#     end
+#     axislegend(
+#       labelsize=10,
+#       position=:lt,
+#       orientation=:horizontal,
+#       nbanks=1,
+#     )
+#   end
+#   f |> display
+#   save("nusselt_number_square.pdf", f)
+# end
 
-    ax = Axis(
-      f[1, i_indices],
-      title=i_indices==1 ? "inner wall, uniform heating" : "inner wall, non-uniform heating",
-      xlabel="position x",
-      ylabel="Nusselt number Nu",
-      xminorticksvisible=true,
-      yminorticksvisible=true,
-      xticks=LinearTicks(5),
-      yticks=LinearTicks(5),
-      limits=((0.0, 1.0), (0,20))
-    )
+# # Postprocessing of convergence study
+# begin
+#   results = DataFrame(
+#     id = Int[],
+#     n_elems = Int[],
+#     n_nodes = Int[],
+#     Nu_bot_avg = Float64[],
+#     Sth_max = Float64[],
+#     Sfl_max = Float64[]
+#   )
 
-    map(outs1[indices]) do o
-      @info "hi"
-      nb = get_normal_vector(o.btrian)
-      NUU = Interpolable(
-        # get (-dT/dr) with a transformation to polar coordinates
-        (- ∇(o.Th) ⋅ (x->VectorValue([0.0,1.0])));
-          searchmethod=KDTreeSearch(num_nearest_vertices=500)
-      )
-      cache = return_cache(NUU, Gridap.Point(0.0, 0.0))
-      Nu_inner = [
-        evaluate!(cache, NUU, Gridap.Point([x, 0.0]))
-        for x in xs_Nu
-      ]
-      lines!(
-        xs_Nu,
-        Nu_inner,
-        label="n = $(o.n)",
-      )
-    end
-    axislegend(
-      labelsize=10,
-      position=:lt,
-      orientation=:horizontal,
-      nbanks=1,
-    )
-  end
-  f |> display
-  save("nusselt_number_square.pdf", f)
-end
+#   n_plot = 100
+#   xs = LinRange(0, 1, n_plot)
+#   ys = LinRange(0, 1, n_plot)
+
+#   map(enumerate([7:11])) do (i_indices, indices)
+
+#     map(enumerate(outs1[indices])) do (i, o)
+
+#       # mesh stats
+#       n_elems = length(o.model.grid.cell_type)
+#       @show n_elems
+#       n_nodes = length(o.model.grid_topology.vertex_coordinates)  # w. Dirichlet
+#       @show n_nodes
+
+#       # avg(Nu)
+#       nb = get_normal_vector(o.btrian)
+#       NUU = Interpolable(
+#         (- ∇(o.Th) ⋅ (x->VectorValue([0.0,1.0])));
+#           searchmethod=KDTreeSearch(num_nearest_vertices=500)
+#       )
+#       cache = return_cache(NUU, Gridap.Point(0.0, 0.0))
+#       Nu_inner = [
+#         evaluate!(cache, NUU, Gridap.Point([x, 0.0]))
+#         for x in xs
+#       ]
+#       Nu_bot_avg = sum(Nu_inner[1:end-1])/length(Nu_inner[1:end-1])
+#       @show Nu_bot_avg
+
+#       # max(Sth)
+#       search_method = KDTreeSearch(num_nearest_vertices=500)
+#       Sth_int = Interpolable(o.Sth; searchmethod=search_method)
+#       cache = return_cache(Sth_int, Gridap.Point(0.0, 0.0))
+#       function fun_help1(x)
+#         return evaluate!(cache, Sth_int, Gridap.Point(x))
+#       end
+#       zs = [fun_help1([x, y]) for x in xs, y in ys]
+#       Sth_max = extrema(zs)[2]
+#       @show Sth_max
+
+#       # max(Sfl)
+#       search_method = KDTreeSearch(num_nearest_vertices=500)
+#       Sfl_int = Interpolable(o.Sfl; searchmethod=search_method)
+#       cache = return_cache(Sfl_int, Gridap.Point(0.0, 0.0))
+#       function fun_help2(x)
+#         return evaluate!(cache, Sfl_int, Gridap.Point(x))
+#       end
+#       zs = [fun_help2([x, y]) for x in xs, y in ys]
+#       Sfl_max = extrema(zs)[2]
+#       @show Sfl_max
+
+#       push!(
+#         results,
+#         (
+#             id         = i,
+#             n_elems    = n_elems,
+#             n_nodes    = n_nodes,
+#             Nu_bot_avg = Nu_bot_avg,
+#             Sth_max    = Sth_max,
+#             Sfl_max    = Sfl_max
+#         )
+#     )
+#     end
+#   end
+#   # Display the final table
+#   @show results
+
+#   # Export to CSV
+#   CSV.write("conv_study_square.csv", results)
+# end
 
 
 
 # 2)
-if haskey(ENV, "GITHUB_ACTIONS")
-  model_annulus = GmshDiscreteModel(
-    joinpath("../meshes/2.5/co-annulus_unstructured_4.msh")
-  )
-  # model_annulus = GmshDiscreteModel(
-  #   joinpath("../meshes/2.5/co-annulus_structured_2.msh")
-  # )
-else
-  model_annulus = GmshDiscreteModel(
-    joinpath("../meshes/2.5/co-annulus_unstructured_6.msh")
-  )
-  # model_annulus = GmshDiscreteModel(
-  #   joinpath("../meshes/2.5/co-annulus_structured_6.msh")
-  # )
-end
+model_annulus = GmshDiscreteModel(
+  haskey(ENV, "GITHUB_ACTIONS") ?
+  joinpath("../meshes/2.5/co-annulus_unstructured_4.msh") :
+  joinpath("../meshes/2.5/co-annulus_unstructured_6.msh")
+)
+model_annuluses = [GmshDiscreteModel(
+  haskey(ENV, "GITHUB_ACTIONS") ?
+  joinpath("../meshes/2.5/co-annulus_unstructured_4.msh") :
+  joinpath("../meshes/2.5/co-annulus_unstructured_$(i).msh")
+) for i in 4:7]
 uniform_annulus = (;
   T_diri_tags=["inner", "outer"],
   T_diri_expressions=[1.0, 0.0],
@@ -193,6 +277,7 @@ paramlist = [
   (0.6, model_annulus, wave_annulus, [10.0^i for i=-2:1:2])
   (1.0, model_annulus, wave_annulus, [4.0^i for i in -2:1:3])
   (1.4, model_annulus, wave_annulus, [4.0^i for i in -2:1:3])
+  [(0.6, model_annuluses[i], wave_annulus, [10.0^i for i=-2:1:2]) for i=1:length(model_annuluses)]...
 ]
 function mkcase(n, model, bcs, Sfl_lvls)
   (;n, model, bcs, Sfl_lvls)
@@ -334,3 +419,96 @@ begin
   f |> display
   save("nusselt_number_annulus.pdf", f)
 end
+
+# Postprocessing of convergence study
+begin
+  results = DataFrame(
+    id = Int[],
+    n_elems = Int[],
+    n_nodes = Int[],
+    Nu_bot_avg = Float64[],
+    Sth_max = Float64[],
+    Sfl_max = Float64[]
+  )
+
+  n_plot = 100
+  # xs = LinRange(0, 1, n_plot)
+  # ys = LinRange(0, 1, n_plot)
+  dist = 0.0
+  ri = 2/3
+  ro = 5/3
+  epss = 0.01
+  rs = LinRange(ri+epss, ro-epss, n_plot)
+  phis = LinRange(0, 2*pi, 2*n_plot-1)
+
+  map(enumerate([7:10])) do (i_indices, indices)
+
+    map(enumerate(outs2[indices])) do (i, o)
+
+      # mesh stats
+      n_elems = length(o.model.grid.cell_types)
+      @show n_elems
+      n_nodes = length(o.model.grid_topology.vertex_coordinates)  # w. Dirichlet
+      @show n_nodes
+
+      # avg(Nu)
+      nb = get_normal_vector(o.btrian)
+      Nu = Interpolable(
+        # get (-dT/dr) with a transformation to polar coordinates
+        (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
+          searchmethod=KDTreeSearch(num_nearest_vertices=50)
+      )
+      cache = return_cache(Nu, Gridap.Point(1.0, 1.0))
+      Nu_inner = [
+        evaluate!(cache, Nu, Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)]))
+        for p in phis
+      ]
+      Nu_bot_avg = sum(Nu_inner[1:end-1])/length(Nu_inner[1:end-1])
+      @show Nu_bot_avg
+
+      # max(Sth)
+      search_method = KDTreeSearch(num_nearest_vertices=500)
+      Sth_int = Interpolable(o.Sth; searchmethod=search_method)
+      cache = return_cache(Sth_int, Gridap.Point(1.0, 1.0))
+      function fun_help1(x)
+        return evaluate!(cache, Sth_int, Gridap.Point(x))
+      end
+      xs = [r * cos(phi) for r in rs, phi in phis]
+      ys = [r * sin(phi) for r in rs, phi in phis]
+      zs = fun_help1.(broadcast((x, y) -> (x, y), xs, ys))
+      Sth_max = extrema(zs)[2]
+      @show Sth_max
+
+      # max(Sfl)
+      search_method = KDTreeSearch(num_nearest_vertices=500)
+      Sfl_int = Interpolable(o.Sfl; searchmethod=search_method)
+      cache = return_cache(Sfl_int, Gridap.Point(1.0, 1.0))
+      function fun_help2(x)
+        return evaluate!(cache, Sfl_int, Gridap.Point(x))
+      end
+      xs = [r * cos(phi) for r in rs, phi in phis]
+      ys = [r * sin(phi) for r in rs, phi in phis]
+      zs = fun_help2.(broadcast((x, y) -> (x, y), xs, ys))
+      Sfl_max = extrema(zs)[2]
+      @show Sfl_max
+
+      push!(
+        results,
+        (
+            id         = i,
+            n_elems    = n_elems,
+            n_nodes    = n_nodes,
+            Nu_bot_avg = Nu_bot_avg,
+            Sth_max    = Sth_max,
+            Sfl_max    = Sfl_max
+        )
+    )
+    end
+  end
+  # Display the final table
+  @show results
+
+  # Export to CSV
+  CSV.write("conv_study_annulus.csv", results)
+end
+1+1
