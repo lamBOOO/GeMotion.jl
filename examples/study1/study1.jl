@@ -248,16 +248,18 @@ using CSV, DataFrames
 
 
 # 2)
+do_conv_study = haskey(ENV, "GITHUB_ACTIONS") ? false : true
+do_study = haskey(ENV, "GITHUB_ACTIONS") ? true : true
 model_annulus = GmshDiscreteModel(
   haskey(ENV, "GITHUB_ACTIONS") ?
-  joinpath("../meshes/2.5/co-annulus_unstructured_4.msh") :
-  joinpath("../meshes/2.5/co-annulus_unstructured_6.msh")
+  joinpath("../meshes/2.5/co-annulus_unstructured_anisotrop_1.msh") :
+  joinpath("../meshes/2.5/co-annulus_unstructured_anisotrop_5.msh")
 )
 model_annuluses = [GmshDiscreteModel(
   haskey(ENV, "GITHUB_ACTIONS") ?
-  joinpath("../meshes/2.5/co-annulus_unstructured_4.msh") :
-  joinpath("../meshes/2.5/co-annulus_unstructured_$(i).msh")
-) for i in 4:7]
+  joinpath("../meshes/2.5/co-annulus_unstructured_anisotrop_1.msh") :
+  joinpath("../meshes/2.5/co-annulus_unstructured_anisotrop_$(i).msh")
+) for i in 1:5]
 uniform_annulus = (;
   T_diri_tags=["inner", "outer"],
   T_diri_expressions=[1.0, 0.0],
@@ -271,13 +273,18 @@ wave_annulus = (;
 
 paramlist = [
   # n, model, bcs, Sfl_lvls
-  (0.6, model_annulus, uniform_annulus, [10.0^i for i=-2:1:2])
-  (1.0, model_annulus, uniform_annulus, [4.0^i for i in -0:1:3])
-  (1.4, model_annulus, uniform_annulus, [4.0^i for i in -0:1:3])
-  (0.6, model_annulus, wave_annulus, [10.0^i for i=-2:1:2])
-  (1.0, model_annulus, wave_annulus, [4.0^i for i in -2:1:3])
-  (1.4, model_annulus, wave_annulus, [4.0^i for i in -2:1:3])
-  [(0.6, model_annuluses[i], wave_annulus, [10.0^i for i=-2:1:2]) for i=1:length(model_annuluses)]...
+  do_conv_study ? [
+    (0.6, model_annulus, uniform_annulus, [10.0^i for i=-2:1:2])
+    (1.0, model_annulus, uniform_annulus, [4.0^i for i in -0:1:3])
+    (1.4, model_annulus, uniform_annulus, [4.0^i for i in -0:1:3])
+    (0.6, model_annulus, wave_annulus, [10.0^i for i=-2:1:2])
+    (1.0, model_annulus, wave_annulus, [4.0^i for i in -2:1:3])
+    (1.4, model_annulus, wave_annulus, [4.0^i for i in -2:1:3])
+  ] : [];
+  do_study ? [
+      (0.6, model_annuluses[i], wave_annulus, [10.0^i for i=-2:1:2])
+      for i=1:length(model_annuluses)
+  ] : [];
 ]
 function mkcase(n, model, bcs, Sfl_lvls)
   (;n, model, bcs, Sfl_lvls)
@@ -366,149 +373,158 @@ for (i, case) in enumerate(cases)
   ) |> display
 end
 
-begin
-  scale = 1.5
-  f = Figure(
-    size=scale .* (600, 250),
-    figure_padding= (0,10,0,0)
-  )
-  nplot_Nu = 100
-  phis_Nu = LinRange(0, 2*pi, 2*nplot_Nu)[1:end]
-
-  map(enumerate([1:3,4:6])) do (i_indices, indices)
-
-    ax = Axis(
-      f[1, i_indices],
-      title=i_indices==1 ? "inner wall, uniform heating" : "inner wall, non-uniform heating",
-      xlabel="angle ϕ",
-      ylabel="Nusselt number Nu",
-      xminorticksvisible=true,
-      yminorticksvisible=true,
-      xticks = (0:1/2*pi:2*pi, ["0", "π/2", "π", "3π/2", "2π"]),
-      yticks=LinearTicks(5),
-      limits=((0.0, 2*pi), (-0.5,10.5))
+# Nusselt number plots
+if do_study
+  begin
+    scale = 1.5
+    f = Figure(
+      size=scale .* (600, 250),
+      figure_padding= (0,10,0,0)
     )
+    nplot_Nu = 100
+    phis_Nu = LinRange(0, 2*pi, 2*nplot_Nu)[1:end]
 
-    map(outs2[indices]) do o
-      nb = get_normal_vector(o.btrian)
-      Nu = Interpolable(
-        # get (-dT/dr) with a transformation to polar coordinates
-        (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
-          searchmethod=KDTreeSearch(num_nearest_vertices=50)
+    map(enumerate([1:3,4:6])) do (i_indices, indices)
+
+      ax = Axis(
+        f[1, i_indices],
+        title = (
+          "inner wall, $(i_indices == 1 ? "uniform" : "non-uniform") heating"
+        ),
+        xlabel="angle ϕ",
+        ylabel="Nusselt number Nu",
+        xminorticksvisible=true,
+        yminorticksvisible=true,
+        xticks = (0:1/2*pi:2*pi, ["0", "π/2", "π", "3π/2", "2π"]),
+        yticks=LinearTicks(5),
+        limits=((0.0, 2*pi), (-0.5,10.5))
       )
-      cache = return_cache(Nu, Gridap.Point(0.0, 0.0))
-      dist = 0.0
-      ri = 2/3
-      Nu_inner = [
-        evaluate!(cache, Nu, Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)]))
-        for p in phis_Nu
-      ]
-      lines!(
-        phis_Nu,
-        Nu_inner,
-        label="n = $(o.n)",
+
+      map(outs2[indices]) do o
+        nb = get_normal_vector(o.btrian)
+        Nu = Interpolable(
+          # get (-dT/dr) with a transformation to polar coordinates
+          (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
+            searchmethod=KDTreeSearch(num_nearest_vertices=50)
+        )
+        cache = return_cache(Nu, Gridap.Point(0.0, 0.0))
+        dist = 0.0
+        ri = 2/3
+        Nu_inner = [
+          evaluate!(
+            cache, Nu, Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)])
+          )
+          for p in phis_Nu
+        ]
+        lines!(
+          phis_Nu,
+          Nu_inner,
+          label="n = $(o.n)",
+        )
+      end
+      axislegend(
+        labelsize=10,
+        position=:lt,
+        orientation=:horizontal,
+        nbanks=1,
       )
     end
-    axislegend(
-      labelsize=10,
-      position=:lt,
-      orientation=:horizontal,
-      nbanks=1,
-    )
+    f |> display
+    save("nusselt_number_annulus.pdf", f)
   end
-  f |> display
-  save("nusselt_number_annulus.pdf", f)
 end
 
 # Postprocessing of convergence study
-begin
-  results = DataFrame(
-    id = Int[],
-    n_elems = Int[],
-    n_nodes = Int[],
-    Nu_bot_avg = Float64[],
-    Sth_max = Float64[],
-    Sfl_max = Float64[]
-  )
-
-  n_plot = 100
-  # xs = LinRange(0, 1, n_plot)
-  # ys = LinRange(0, 1, n_plot)
-  dist = 0.0
-  ri = 2/3
-  ro = 5/3
-  epss = 0.01
-  rs = LinRange(ri+epss, ro-epss, n_plot)
-  phis = LinRange(0, 2*pi, 2*n_plot-1)
-
-  map(enumerate([7:10])) do (i_indices, indices)
-
-    map(enumerate(outs2[indices])) do (i, o)
-
-      # mesh stats
-      n_elems = length(o.model.grid.cell_types)
-      @show n_elems
-      n_nodes = length(o.model.grid_topology.vertex_coordinates)  # w. Dirichlet
-      @show n_nodes
-
-      # avg(Nu)
-      nb = get_normal_vector(o.btrian)
-      Nu = Interpolable(
-        # get (-dT/dr) with a transformation to polar coordinates
-        (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
-          searchmethod=KDTreeSearch(num_nearest_vertices=50)
-      )
-      cache = return_cache(Nu, Gridap.Point(1.0, 1.0))
-      Nu_inner = [
-        evaluate!(cache, Nu, Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)]))
-        for p in phis
-      ]
-      Nu_bot_avg = sum(Nu_inner[1:end-1])/length(Nu_inner[1:end-1])
-      @show Nu_bot_avg
-
-      # max(Sth)
-      search_method = KDTreeSearch(num_nearest_vertices=500)
-      Sth_int = Interpolable(o.Sth; searchmethod=search_method)
-      cache = return_cache(Sth_int, Gridap.Point(1.0, 1.0))
-      function fun_help1(x)
-        return evaluate!(cache, Sth_int, Gridap.Point(x))
-      end
-      xs = [r * cos(phi) for r in rs, phi in phis]
-      ys = [r * sin(phi) for r in rs, phi in phis]
-      zs = fun_help1.(broadcast((x, y) -> (x, y), xs, ys))
-      Sth_max = extrema(zs)[2]
-      @show Sth_max
-
-      # max(Sfl)
-      search_method = KDTreeSearch(num_nearest_vertices=500)
-      Sfl_int = Interpolable(o.Sfl; searchmethod=search_method)
-      cache = return_cache(Sfl_int, Gridap.Point(1.0, 1.0))
-      function fun_help2(x)
-        return evaluate!(cache, Sfl_int, Gridap.Point(x))
-      end
-      xs = [r * cos(phi) for r in rs, phi in phis]
-      ys = [r * sin(phi) for r in rs, phi in phis]
-      zs = fun_help2.(broadcast((x, y) -> (x, y), xs, ys))
-      Sfl_max = extrema(zs)[2]
-      @show Sfl_max
-
-      push!(
-        results,
-        (
-            id         = i,
-            n_elems    = n_elems,
-            n_nodes    = n_nodes,
-            Nu_bot_avg = Nu_bot_avg,
-            Sth_max    = Sth_max,
-            Sfl_max    = Sfl_max
-        )
+if do_conv_study
+  begin
+    results = DataFrame(
+      id = Int[],
+      n_elems = Int[],
+      n_nodes = Int[],
+      Nu_inner_avg = Float64[],
+      Sth_max = Float64[],
+      Sfl_max = Float64[]
     )
-    end
-  end
-  # Display the final table
-  @show results
 
-  # Export to CSV
-  CSV.write("conv_study_annulus.csv", results)
+    n_plot = 100
+    # xs = LinRange(0, 1, n_plot)
+    # ys = LinRange(0, 1, n_plot)
+    dist = 0.0
+    ri = 2/3
+    ro = 5/3
+    epss = 0.01
+    rs = LinRange(ri+epss, ro-epss, n_plot)
+    phis = LinRange(0, 2*pi, 2*n_plot-1)
+
+    map(enumerate([1:5])) do (i_indices, indices)
+
+      map(enumerate(outs2[indices])) do (i, o)
+
+        # mesh stats
+        n_elems = length(o.model.grid.cell_types)
+        @show n_elems
+        n_nodes = length(o.model.grid_topology.vertex_coordinates)  # w. Dirichlet
+        @show n_nodes
+
+        # avg(Nu)
+        nb = get_normal_vector(o.btrian)
+        Nu = Interpolable(
+          # get (-dT/dr) with a transformation to polar coordinates
+          (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
+            searchmethod=KDTreeSearch(num_nearest_vertices=50)
+        )
+        cache = return_cache(Nu, Gridap.Point(1.0, 1.0))
+        Nu_inner = [
+          evaluate!(cache, Nu, Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)]))
+          for p in phis
+        ]
+        Nu_inner_avg = sum(Nu_inner[1:end-1])/length(Nu_inner[1:end-1])
+        @show Nu_inner_avg
+
+        # max(Sth)
+        search_method = KDTreeSearch(num_nearest_vertices=500)
+        Sth_int = Interpolable(o.Sth; searchmethod=search_method)
+        cache = return_cache(Sth_int, Gridap.Point(1.0, 1.0))
+        function fun_help1(x)
+          return evaluate!(cache, Sth_int, Gridap.Point(x))
+        end
+        xs = [r * cos(phi) for r in rs, phi in phis]
+        ys = [r * sin(phi) for r in rs, phi in phis]
+        zs = fun_help1.(broadcast((x, y) -> (x, y), xs, ys))
+        Sth_max = extrema(zs)[2]
+        @show Sth_max
+
+        # max(Sfl)
+        search_method = KDTreeSearch(num_nearest_vertices=500)
+        Sfl_int = Interpolable(o.Sfl; searchmethod=search_method)
+        cache = return_cache(Sfl_int, Gridap.Point(1.0, 1.0))
+        function fun_help2(x)
+          return evaluate!(cache, Sfl_int, Gridap.Point(x))
+        end
+        xs = [r * cos(phi) for r in rs, phi in phis]
+        ys = [r * sin(phi) for r in rs, phi in phis]
+        zs = fun_help2.(broadcast((x, y) -> (x, y), xs, ys))
+        Sfl_max = extrema(zs)[2]
+        # Sfl_max = sum(zs)/length(zs)
+        @show Sfl_max
+
+        push!(
+          results,
+          (
+              id         = i,
+              n_elems    = n_elems,
+              n_nodes    = n_nodes,
+              Nu_inner_avg = Nu_inner_avg,
+              Sth_max    = Sth_max,
+              Sfl_max    = Sfl_max
+          )
+      )
+      end
+    end
+    # Display the final table
+    @show results
+
+    # Export to CSV
+    CSV.write("conv_study_annulus.csv", results)
+  end
 end
-1+1
