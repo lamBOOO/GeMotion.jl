@@ -2,6 +2,7 @@ using Gridap
 using Gridap.CellData
 using Gridap.Arrays
 using CairoMakie
+using CSV
 using LineSearches: BackTracking, StrongWolfe
 
 using Random
@@ -204,7 +205,8 @@ function simulate3(;
   solver = LinearFESolver(ls)
   psih = solve(solver, op)
 
-  # entropies, see:
+  # Entropies & average Bejan number
+  # see:
   # R. S. Kaluri, T. Basak, Entropy Generation Minimization Versus Thermal
   # Mixing Due to Natural Convection in Differentially and Discretely Heated
   # Square Cavities, Numerical Heat Transfer, Part A: Applications 58 (6)
@@ -218,13 +220,22 @@ function simulate3(;
       +
       ((inner(x, TensorValue(0, 1, 1, 0))) |> x -> x * x)
     ), TestFESpace(model, ReferenceFE(lagrangian, Float64, 2), conformity=:H1))
+  Sth_tot = sum(∫(Sth)dΩ)
+  Sfl_tot = sum(∫(Sfl)dΩ)
+  Be_avg = Sth_tot / (Sth_tot + Sfl_tot)
 
   fname = joinpath(name, "results.vtu")
+  fname_csv = joinpath(name, "results.csv")
   println("Write results to $(fname)")
   writevtk(Ωₕ, fname, cellfields=[
     "uh" => uh, "ph" => ph, "Th" => Th, "psih" => psih,
-    "Sth" => Sth, "Sfl" => Sfl
+    "Sth" => Sth, "Sfl" => Sfl, "Sth_tot" => Sth_tot , "Sfl_tot" => Sfl_tot , "Be_avg" => Be_avg
   ])
+  CSV.write(fname_csv, (;
+    Sth_tot=[Sth_tot],
+    Sfl_tot=[Sfl_tot],
+    Be_avg=[Be_avg],
+  ))
 
   return (
     uh=uh,

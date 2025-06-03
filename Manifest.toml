@@ -2,7 +2,7 @@
 
 julia_version = "1.10.7"
 manifest_format = "2.0"
-project_hash = "5a8166a9795203390082fd45ab75810dc2563734"
+project_hash = "880d3d32af27c285718d1c955f8178de5537605b"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -1787,9 +1787,9 @@ version = "1.6.1"
 
 [[deps.WriteVTK]]
 deps = ["Base64", "CodecZlib", "FillArrays", "LightXML", "TranscodingStreams", "VTKBase"]
-git-tree-sha1 = "1d8042d58334ab7947ce505709df7009da6f3375"
+git-tree-sha1 = "a329e0b6310244173690d6a4dfc6d1141f9b9370"
 uuid = "64499a7a-5c06-52f2-abe2-ccb03c286192"
-version = "1.21.1"
+version = "1.21.2"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
