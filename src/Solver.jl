@@ -106,7 +106,7 @@ function simulate3(;
   Ωₕ = Triangulation(model)
   dΩ = Measure(Ωₕ, degree)
 
-  g = VectorValue([0, 1])
+  g = VectorValue(0.0, 1.0)
 
   reg = 1E-3 # influences convergence of Newton and avoids singularities
   gamma_dot(∇u) = reg + 2 * (D(∇u) ⊙ D(∇u))
