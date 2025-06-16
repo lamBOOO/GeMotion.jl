@@ -160,7 +160,6 @@ if do_study
       )
 
       map(outs1[indices]) do o
-        @info "hi"
         nb = get_normal_vector(o.btrian)
         NUU = Interpolable(
           # get (-dT/dr) with a transformation to polar coordinates
