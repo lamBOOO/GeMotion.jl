@@ -30,6 +30,7 @@ out = GeMotion.simulate(
   (;
     T_diri_tags=[5, 7, 8, 1, 2],
     T_diri_expressions=[1.0, 0.0, 0.0, 0.5, 0.5],
+    T_natural_tags=[3, 4, 6],
     V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
   )...
 )
