@@ -41,38 +41,41 @@ wave = (;
 common_lvls = (; T=[0.1 * i for i = 1:10])
 
 paramlist = [
-  # Pr, Ra, n, psi_lvls, Sth_lvls, Sfl_lvls
-  (0.7, 1E3, 1.0, [0.01; 0.05:0.05:0.15], 5, 5, uniform)
-  (0.7, 5 * 1E3, 1.0, [0.15, 0.5, 1, 1.3], 5, 5, uniform)
-  (0.7, 1E5, 1.0, [1, 5, 10, 13], 5, 5, uniform)
-  (0.1, 1E5, 1.0, [1, 4, 7, 9], 5, 5, uniform)
-  (1.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, uniform)
-  (10.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, uniform)
+  # Pr, Ra, n, psi_lvls, Pi_lvls, Sth_lvls, Sfl_lvls
+  (0.7, 1E3, 1.0, [0.01; 0.05:0.05:0.15], 10, 5, 5, uniform)
+  (0.7, 5 * 1E3, 1.0, [0.15, 0.5, 1, 1.3], 10, 5, 5, uniform)
+  (0.7, 1E5, 1.0, [1, 5, 10, 13], 10, 5, 5, uniform)
+  (0.1, 1E5, 1.0, [1, 4, 7, 9], 10, 5, 5, uniform)
+  (1.0, 1E5, 1.0, [1, 5, 10, 14], 10, 5, 5, uniform)
+  (10.0, 1E5, 1.0, [1, 5, 10, 14], 10, 5, 5, uniform)
   (
     0.015, 1E3, 1.0, [0.01; 0.05:0.05:0.15],
     vcat(1:1:4, 6, 8, 10:10:30, 0.01, 0.1, 0.5, 0.25),
     vcat(0.001, 0.003, 0.005, 0.01:0.01:0.05), uniform
   )
-  (0.7, 1E3, 1.0, [0.01, 0.05, 0.1, 0.15], 5, 5, wave)
-  (0.7, 5 * 1E3, 1.0, [0.15, 0.5, 1, 1.3], 5, 5, wave)
-  (0.7, 1E5, 1.0, [1, 5, 10, 13], 5, 5, wave)
-  (0.1, 1E5, 1.0, [1, 4, 7, 9], 5, 5, wave)
-  (1.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, wave)
-  (10.0, 1E5, 1.0, [1, 5, 10, 14], 5, 5, wave)
-  (0.015, 1E3, 1.0, [0.01, 0.05, 0.1, 0.15], 5, 5, wave)
+  (0.7, 1E3, 1.0, [0.01, 0.05, 0.1, 0.15], 10, 5, 5, wave)
+  (0.7, 5 * 1E3, 1.0, [0.15, 0.5, 1, 1.3], 10, 5, 5, wave)
+  (0.7, 1E5, 1.0, [1, 5, 10, 13], 10, 5, 5, wave)
+  (0.1, 1E5, 1.0, [1, 4, 7, 9], 10, 5, 5, wave)
+  (1.0, 1E5, 1.0, [1, 5, 10, 14], 10, 5, 5, wave)
+  (10.0, 1E5, 1.0, [1, 5, 10, 14], 10, 5, 5, wave)
+  (0.015, 1E3, 1.0, [0.01, 0.05, 0.1, 0.15], 10, 5, 5, wave)
 ]
-function mkcase(Pr, Ra, n, psi_vec, Sth_vec, Sfl_vec, bcs)
+function mkcase(Pr, Ra, n, psi_vec, Pi_vec, Sth_vec, Sfl_vec, bcs)
   [
     Pr, Ra, n, model, nlsolver_opts,
     (;
-      common_lvls..., psi=vcat(psi_vec, -psi_vec), Sth=Sth_vec,
+      common_lvls...,
+      psi=typeof(psi_vec) == Int ? psi_vec : vcat(psi_vec, -psi_vec),
+      Pi=typeof(Pi_vec) == Int ? Pi_vec : vcat(Pi_vec, -Pi_vec),
+      Sth=Sth_vec,
       Sfl=Sfl_vec
     ), bcs
   ]
 end
 cases = [
-  mkcase(Pr, Ra, n, psi_vec, Sth_vec, Sfl_vec, bcs)
-  for (Pr, Ra, n, psi_vec, Sth_vec, Sfl_vec, bcs) in paramlist
+  mkcase(Pr, Ra, n, psi_vec, Pi_vec, Sth_vec, Sfl_vec, bcs)
+  for (Pr, Ra, n, psi_vec, Pi_vec, Sth_vec, Sfl_vec, bcs) in paramlist
 ]
 
 # Run cases

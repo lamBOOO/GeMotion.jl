@@ -34,24 +34,32 @@ nlsolver_opts = (;
 common_lvls = (;T=[0.1*i for i=1:10], Sth=5, Sfl=10)
 
 paramlist = [
-    # Pr, Ra, n, psi_lvls
-    (1e3, 1e4, 0.6, 1:2:13),
-    (1e3, 1e4, 1.0, vcat(0.5:1.0:4.5, [5.0])),
-    (1e3, 1e4, 1.8, 0.1:0.2:1.1),
-    (1e3, 1e5, 0.6, [4, 12, 20, 26, 28, 29]),
-    (1e3, 1e5, 1.0, vcat(1:2:11, [10])),
-    (1e3, 1e5, 1.8, 0.2:0.4:3.0),
-    (1e3, 1e6, 0.6, [10, 30, 50, 60, 65]),
-    (1e3, 1e6, 1.0, vcat(2:4:18, [19])),
-    (1e3, 1e6, 1.8, vcat(0.5:1.0:5.5, [6])),
+    # Pr, Ra, n, psi_lvls, Pi_lvls
+    (1e3, 1e4, 0.6, 1:2:13, 100),
+    (1e3, 1e4, 1.0, vcat(0.5:1.0:4.5, [5.0]), 100),
+    (1e3, 1e4, 1.8, 0.1:0.2:1.1, 100),
+    (1e3, 1e5, 0.6, [4, 12, 20, 26, 28, 29], 100),
+    (1e3, 1e5, 1.0, vcat(1:2:11, [10]), 100),
+    (1e3, 1e5, 1.8, 0.2:0.4:3.0, 100),
+    (1e3, 1e6, 0.6, [10, 30, 50, 60, 65], 100),
+    (1e3, 1e6, 1.0, vcat(2:4:18, [19]), 100),
+    (1e3, 1e6, 1.8, vcat(0.5:1.0:5.5, [6]), 100),
 ]
-function mkcase(Pr, Ra, n, psi_vec)
+function mkcase(Pr, Ra, n, psi_vec, Pi_vec)
     [
       Pr, Ra, n, model, nlsolver_opts,
-      (; common_lvls..., psi = vcat(psi_vec, -psi_vec)), turan
+      (;
+        common_lvls...,
+        psi=typeof(psi_vec) == Int ? psi_vec : vcat(psi_vec, -psi_vec),
+        Pi=typeof(Pi_vec) == Int ? Pi_vec : vcat(Pi_vec, -Pi_vec),
+      ), turan
     ]
 end
-cases = [ mkcase(Pr, Ra, n, psi_vec) for (Pr, Ra, n, psi_vec) in paramlist ]
+cases = [
+  mkcase(
+    Pr, Ra, n, psi_vec, Pi_vec) for (Pr, Ra, n, psi_vec, Pi_vec
+  ) in paramlist
+]
 
 if haskey(ENV, "GITHUB_ACTIONS")
   # Make faster when in GitHub Actions environment: only run the first case
