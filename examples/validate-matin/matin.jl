@@ -61,7 +61,7 @@ for (i, p) in enumerate(params)
     (;
       T_diri_tags = ["inner", "outer"],
       T_diri_expressions = [1.0, 0.0],
-      T_natural = [],
+      T_natural_tags = ["heatfunction_zero_points"],
       V_diri_tags = ["all"]
     )...
   )
