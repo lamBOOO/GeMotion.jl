@@ -12,7 +12,7 @@ using CSV, DataFrames
 #  |         |
 # (P1)-(L5)-(P2)
 model = CartesianDiscreteModel(
-  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (100, 100)
+  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (50, 50) : (100, 100)
 )
 
 # solver settings
@@ -21,7 +21,8 @@ nlsolver_opts = (;
   method=:newton,
   linesearch=BackTracking(),
   ftol=1E-8,
-  xtol=1E-50
+  xtol=1E-50,
+  iterations=200,
 )
 
 # BCs
