@@ -12,7 +12,7 @@ using CSV, DataFrames
 #  |         |
 # (P1)-(L5)-(P2)
 model = CartesianDiscreteModel(
-  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (50, 50) : (100, 100)
+  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (100, 100) : (100, 100)
 )
 
 # solver settings
