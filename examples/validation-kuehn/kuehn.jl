@@ -46,6 +46,7 @@ out = GeMotion.simulate(
   (;
     T_diri_tags=["inner", "outer"],
     T_diri_expressions=[1.0, 0.0],
+    T_natural_tags=[],
     V_diri_tags=["all"]
   )...
 )

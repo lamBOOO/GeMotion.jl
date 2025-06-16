@@ -18,6 +18,7 @@ model_small = CartesianDiscreteModel((0, 1, 0, 1), (20, 20))  # CI: see later
 turan = (;
   T_diri_tags = [7, 8, 1, 2, 3, 4],
   T_diri_expressions = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
+  T_natural_tags = [5, 6],
   V_diri_tags = [1, 2, 3, 4, 5, 6, 7, 8],
 )
 
@@ -69,6 +70,6 @@ for (i,case) in enumerate(cases)
   )
   push!(outs, out)
   out2 = GeMotion.plot_all_unitsquare(
-    out.psih, out.Th, out.uh, case[4], name, case[6]
+    out.psih, out.Pih, out.Th, out.uh, case[4], name, case[6]
   )
 end

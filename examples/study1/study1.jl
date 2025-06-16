@@ -14,6 +14,12 @@ do_study = haskey(ENV, "GITHUB_ACTIONS") ? true : false
 
 
 # 1)
+# Setup model
+# (P3)-(L6)-(P4)
+#  |         |
+# (L7)      (L8)
+#  |         |
+# (P1)-(L5)-(P2)
 model_square = CartesianDiscreteModel(
   (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (200, 200)
 )
@@ -25,11 +31,13 @@ model_squares = [CartesianDiscreteModel(
 uniform = (;
   T_diri_tags=[5, 7, 8, 1, 2],
   T_diri_expressions=[1.0, 0.0, 0.0, 0.5, 0.5],
+  T_natural_tags=[3, 4, 6],
   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
 )
 wave = (;
   T_diri_tags=[5, 7, 8, 1, 2],
   T_diri_expressions=[x -> sin(pi * x[1]), 0.0, 0.0, 0.0, 0.0],
+  T_natural_tags=[3, 4, 6],
   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
 )
 
@@ -83,6 +91,14 @@ for (i, case) in enumerate(cases)
   GeMotion.contourplot_unitsquare(;
     fun=out.psih,
     name=name*"/psi",
+    contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
+    surfaceargs=(;
+      colormap=:coolwarm
+    )
+  ) |> display
+  GeMotion.contourplot_unitsquare(;
+    fun=out.Pih,
+    name=name*"/Pi",
     contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
     surfaceargs=(;
       colormap=:coolwarm
@@ -274,11 +290,13 @@ model_annuluses = [GmshDiscreteModel(
 uniform_annulus = (;
   T_diri_tags=["inner", "outer"],
   T_diri_expressions=[1.0, 0.0],
+  T_natural_tags=[],
   V_diri_tags=["all"]
 )
 wave_annulus = (;
   T_diri_tags=["inner", "outer"],
   T_diri_expressions=[x->0.5*(sin(atan(x[2],x[1]))+1), 0.0],
+  T_natural_tags=[],
   V_diri_tags=["all"]
 )
 
@@ -356,6 +374,13 @@ for (i, case) in enumerate(cases)
     ;opts...,
     fun=out.psih,
     name=name*"/psi",
+    contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
+    surfaceargs=(;colormap=:coolwarm)
+  ) |> display
+  GeMotion.contourplot_coannulus(
+    ;opts...,
+    fun=out.Pih,
+    name=name*"/Pi",
     contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
     surfaceargs=(;colormap=:coolwarm)
   ) |> display

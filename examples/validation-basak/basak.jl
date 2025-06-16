@@ -28,11 +28,13 @@ nlsolver_opts = (;
 uniform = (;
   T_diri_tags=[5, 7, 8, 1, 2],
   T_diri_expressions=[1.0, 0.0, 0.0, 0.5, 0.5],
+  T_natural_tags=[3, 4, 6],
   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
 )
 wave = (;
   T_diri_tags=[5, 7, 8, 1, 2],
   T_diri_expressions=[x -> sin(pi * x[1]), 0.0, 0.0, 0.0, 0.0],
+  T_natural_tags=[3, 4, 6],
   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8]
 )
 
@@ -83,7 +85,7 @@ for (i, case) in enumerate(cases)
     nlsolver_custom_init_guess=[], nlsolver_init_guess_type=:zero,; case[7]...
   )
   out = GeMotion.plot_all_unitsquare(
-    out2.psih, out2.Th, out2.uh, model, "$(i)_$(case[1])_$(case[2])", case[6]
+    out2.psih, out2.Pih, out2.Th, out2.uh, model, "$(i)_$(case[1])_$(case[2])", case[6]
   )
   push!(outs2, out2)
   push!(outs, (; Pr=case[1], Ra=case[2], out...))

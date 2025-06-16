@@ -149,11 +149,11 @@ contourplot_unitsquare=contourplot_unitsquare2
 
 
 """
-    plot_all_unitsquare2(psih, Th, uh, model, name, levels)
+    plot_all_unitsquare4(psih, Pih, Th, uh, model, name, levels)
 
 TBW
 """
-function plot_all_unitsquare2(psih, Th, uh, model, name, levels)
+function plot_all_unitsquare4(psih, Pih, Th, uh, model, name, levels)
   # TODO: Make named args
 
   Ωₕ = Triangulation(model)
@@ -193,6 +193,35 @@ function plot_all_unitsquare2(psih, Th, uh, model, name, levels)
     xs, ys, zs, levels=levels.psi, labels=true, labelsize=15, color=:black
   )
   save(joinpath(name, "streamfunction.pdf"), f)
+
+  f = Figure(
+    size=(500, 500), figure_padding=(0, 10, 0, 0)
+  )
+  Axis(
+    f[1, 1],
+    aspect=1,
+    title="heat function Π",
+    xlabel="x",
+    ylabel="y",
+    xminorticksvisible=true,
+    yminorticksvisible=true,
+    xticks=LinearTicks(6),
+    yticks=LinearTicks(6),
+    limits=(0, 1, 0, 1)
+  )
+  Pihi = Interpolable(Pih; searchmethod=search_method)
+  cache_Pi = return_cache(Pihi, Gridap.Point(0.0, 0.0))
+  function helper_Pi(x)
+    return evaluate!(cache_Pi, Pihi, Gridap.Point(x))
+    # TODO: Improve with using proper nodes and connectivity for plotting
+  end
+  zs = [helper_Pi([x, y]) for x in xs, y in ys]
+  @info findmax(zs)
+
+  contour!(
+    xs, ys, zs, levels=levels.Pi, labels=true, labelsize=15, color=:black
+  )
+  save(joinpath(name, "heatfunction.pdf"), f)
 
   Thi = Interpolable(Th; searchmethod=search_method)
   cache_T = return_cache(Thi, Gridap.Point(0.0, 0.0))
@@ -309,4 +338,4 @@ function plot_all_unitsquare2(psih, Th, uh, model, name, levels)
   )
 end
 
-plot_all_unitsquare = plot_all_unitsquare2
+plot_all_unitsquare = plot_all_unitsquare4

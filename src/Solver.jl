@@ -23,6 +23,7 @@ Simulate the flow in a square cavity with a moving lid and a temperature gradien
 - `nlsolver_opts::Dict`: Options for the nonlinear solver.
 - `T_diri_tags::Array{String}`: Tags for the Dirichlet boundary conditions for the temperature.
 - `T_diri_expressions::Array{Float64}`: Expressions for the Dirichlet boundary conditions for the temperature.
+- `T_natural_tags::Array{String}`: Tags for the Natural boundary conditions for the temperature, used to apply zero Dirichlet BCs for the heat function Pi.
 
 # Returns
 - `uh::FEFunction`: Velocity field.
@@ -44,7 +45,7 @@ simulate(;name="sim",Pr=1.0,Ra=1.0,n=1.0,model=CartesianDiscreteModel((0, 1, 0, 
 ```
 
 """
-function simulate3(;
+function simulate8(;
   name="sim",
   Pr=1.0,
   Ra=1.0,
@@ -61,9 +62,10 @@ function simulate3(;
   nlsolver_init_guess_type=:zero,
   jac_scaling=1.0,
   T_diri_tags=[
-    1,2,3,4,5,6
+    1, 2, 3, 4, 5, 6
   ],
   T_diri_expressions=[0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
+  T_natural_tags=Int[],
   V_diri_tags=[1, 2, 3, 4, 5, 6, 7, 8],
 )
   @info Pr, Ra, n, T_diri_tags, T_diri_expressions
@@ -167,14 +169,14 @@ function simulate3(;
     result = solve(solver, op)
   elseif nlsolver_init_guess_type == :ones
     println("constant one initial guess")
-    xu = ones(Float64,num_free_dofs(U))
-    xp = ones(Float64,num_free_dofs(P))
-    xT = ones(Float64,num_free_dofs(T))
+    xu = ones(Float64, num_free_dofs(U))
+    xp = ones(Float64, num_free_dofs(P))
+    xT = ones(Float64, num_free_dofs(T))
     # uh0 = FEFunction(U,xu)
     # ph0 = FEFunction(P,xp)
     # Th0 = FEFunction(T,xT)
-    init_guess = FEFunction(X, vcat(xu,xp,xT))
-    result = solve!(init_guess,solver,op)[1]
+    init_guess = FEFunction(X, vcat(xu, xp, xT))
+    result = solve!(init_guess, solver, op)[1]
   elseif nlsolver_init_guess_type == :random
     println("random initial guess")
     Random.seed!(1234)
@@ -186,13 +188,15 @@ function simulate3(;
   elseif nlsolver_init_guess_type == :custom
     println("custom initial guess")
     init_guess = FEFunction(X, nlsolver_custom_init_guess)
-    result = solve!(init_guess,solver,op)[1]
+    result = solve!(init_guess, solver, op)[1]
   else
     error("Unknown initial guess type: " * string(nlsolver_init_guess_type))
   end
   uh, ph, Th = result
 
-  # stream function
+  # stream function psi
+  # Paraview validation: "How to plot heatlines?"
+  # -> See https://doi.org/10.1115/1.4062954
   reffe_psi = ReferenceFE(lagrangian, Float64, 1)
   test_psi = TestFESpace(
     model, reffe_psi, conformity=:H1, dirichlet_tags=V_diri_tags
@@ -204,6 +208,69 @@ function simulate3(;
   ls = LUSolver()
   solver = LinearFESolver(ls)
   psih = solve(solver, op)
+
+  # heat function Pi
+
+  # 2)
+  # nb = get_normal_vector(btrian)
+  # Γ_left = BoundaryTriangulation(model; tags=[1, 7, 3])   # left for square
+  # dΓ_left = Measure(Γ_left, 2 * degree)
+  # Nu = -∇(Th) ⋅ nb
+  # Nu_total_left = sum(∫(Nu) * dΓ_left)
+  # area_Γ_left = sum(∫(1.0) * dΓ_left)
+  # @show Nu_total_left, area_Γ_left
+  # Nu_avg_left = Nu_total_left ./ area_Γ_left
+  # @show Nu_avg_left
+
+  @info "Setup heat function Pi"
+  reffe_Pi = ReferenceFE(lagrangian, Float64, 1)
+  # 1) no Dirichlet BCs work, idn why
+  # test_Pi = TestFESpace(model, reffe_Pi, conformity=:H1)
+  # 2) Basak 2009 approach, set Dirichlet at adiabatic walls and fix corners
+  # test_Pi = TestFESpace(
+  #   model, reffe_Pi, conformity=:H1, dirichlet_tags=[T_natural_tags;[1,2]]
+  # )
+  # 3) hybrid approach, only set Dirichlet BCs on the adiabatic walls
+  # test_Pi = TestFESpace(
+  #   model, reffe_Pi, conformity=:H1, dirichlet_tags=T_natural_tags
+  # )
+  if !isempty(T_natural_tags)
+    test_Pi = TestFESpace(
+      model, reffe_Pi, conformity=:H1, dirichlet_tags=T_natural_tags
+    )
+  else
+    test_Pi = TestFESpace(model, reffe_Pi, conformity=:H1)
+  end
+
+  # 1)
+  # trial_Pi = TrialFESpace(test_Pi)
+  # 2)
+  # trial_Pi = TrialFESpace(test_Pi, [0.0,0.0,0.0,Nu_avg_left,-Nu_avg_left])
+  # 3()
+  if !isempty(T_natural_tags)
+    trial_Pi = TrialFESpace(test_Pi, 0.0)
+  else
+    trial_Pi = TrialFESpace(test_Pi)
+  end
+
+  dΩ2 = Measure(Ωₕ, 2 * degree)
+
+  R = TensorValue(0.0, -1.0,
+                  1.0, 0.0)
+  a_Pi(u, v) = ∫(∇(v) ⋅ ∇(u)) * dΩ2
+  b_Pi(v) = ∫(-∇(v) ⋅ (R ⋅ (Th * uh - ∇(Th)))) * dΩ2
+  # other approaches: only work with setting some Dirichlet BCs
+  # b_Pi(v) = ∫(-v * (∇(Th * uh) ⊙ TensorValue(0, -1, 1, 0))) * dΩ2
+  # b_Pi(v) = ∫(v * (
+  #   (∇(uh) ⊙ TensorValue(0, -1, 1, 0)) * Th -
+  #   uh ⋅ (TensorValue(0, -1, 1, 0) ⋅ ∇(Th))
+  # )) * dΩ2
+  # b_Pi(v) = ∫( v * divergence( R ⋅ (Th*uh) ) ) * dΩ2
+  # b_Pi(v) = ∫( - ∇(v) ⋅ ( R ⋅ (Th*uh) ) ) * dΩ2
+  op = AffineFEOperator(a_Pi, b_Pi, trial_Pi, test_Pi)
+  ls = LUSolver()
+  solver = LinearFESolver(ls)
+  Pih = solve(solver, op)
 
   # Entropies & average Bejan number
   # see:
@@ -228,8 +295,9 @@ function simulate3(;
   fname_csv = joinpath(name, "results.csv")
   println("Write results to $(fname)")
   writevtk(Ωₕ, fname, cellfields=[
-    "uh" => uh, "ph" => ph, "Th" => Th, "psih" => psih,
-    "Sth" => Sth, "Sfl" => Sfl, "Sth_tot" => Sth_tot , "Sfl_tot" => Sfl_tot , "Be_avg" => Be_avg
+    "uh" => uh, "ph" => ph, "Th" => Th, "psih" => psih, "Pih" => Pih,
+    "Sth" => Sth, "Sfl" => Sfl, "Sth_tot" => Sth_tot,
+    "Sfl_tot" => Sfl_tot, "Be_avg" => Be_avg
   ])
   CSV.write(fname_csv, (;
     Sth_tot=[Sth_tot],
@@ -245,6 +313,7 @@ function simulate3(;
     Sfl=Sfl,
     result=result,
     psih=psih,
+    Pih=Pih,
     btrian=btrian,
     model=model,
     Ωₕ=Ωₕ,
@@ -252,6 +321,6 @@ function simulate3(;
     Ra=Ra,
     n=n,
     res_op=res_op,
-    )
+  )
 end
-simulate = simulate3
+simulate = simulate8
