@@ -290,13 +290,13 @@ model_annuluses = [GmshDiscreteModel(
 uniform_annulus = (;
   T_diri_tags=["inner", "outer"],
   T_diri_expressions=[1.0, 0.0],
-  T_natural_tags=[],
+  T_natural_tags=["heatfunction_zero_points"],
   V_diri_tags=["all"]
 )
 wave_annulus = (;
   T_diri_tags=["inner", "outer"],
   T_diri_expressions=[x->0.5*(sin(atan(x[2],x[1]))+1), 0.0],
-  T_natural_tags=[],
+  T_natural_tags=["heatfunction_zero_points"],
   V_diri_tags=["all"]
 )
 

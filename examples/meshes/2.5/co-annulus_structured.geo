@@ -12,14 +12,15 @@ R2 = 5/3;
 
 Point(1) = {0, 0, 0, res};
 
-Point(1000) = { R1, 0, 0, res};
-Point(1001) = {-R1, 0, 0, res};
+Point(1000) = {0,  R1, 0, res};
+Point(1001) = {0, -R1, 0, res};
 
-Point(1100) = { R2, 0, 0, res};
-Point(1101) = {-R2, 0, 0, res};
+Point(1100) = {0,  R2, 0, res};
+Point(1101) = {0, -R2, 0, res};
 
 Physical Point("inner") = {1000,1001};
 Physical Point("outer") = {1100,1101};
+Physical Point("heatfunction_zero_points") = {1000,1001,1100,1101};
 Physical Point("all") = {1000,1001,1100,1101};
 
 Circle(2000) = {1000,1,1001};
