@@ -12,13 +12,13 @@ using CSV, DataFrames
 #  |         |
 # (P1)-(L5)-(P2)
 model = CartesianDiscreteModel(
-  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (100, 100) : (100, 100)
+  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (100, 100) : (200, 200)
 )
 
 # solver settings
 nlsolver_opts = (;
   show_trace=true,
-  method=:newton,
+  method=:trust_region,
   linesearch=BackTracking(),
   ftol=1E-8,
   xtol=1E-50,
@@ -73,9 +73,9 @@ paramlist = [
 (0.015, 1E4, 1.0, [0.001; 0.005; 0.01; 0.04; 0.1; 0.3; 0.6; 0.8],
   [0.01; 0.05; 0.1; 0.2; 0.3; 0.5; 0.6], 5, 5, nonuniform_side,
   "basak2011_fig3_diff"),
-(0.7, 1E5, 1.0, [0.1; 1; 2; 3; 5; 6],
-  [0.1; 0.5:0.5:4.5], 5, 5, nonuniform_side,
-  "basak2011_fig5_diff"),
+# (0.7, 1E5, 1.0, [0.1; 1; 2; 3; 5; 6],
+#   [0.1; 0.5:0.5:4.5], 5, 5, nonuniform_side,
+#   "basak2011_fig5_diff"),  # doesnt work with trust_region
 ]
 function mkcase(Pr, Ra, n, psi_vec, Pi_vec, Sth_vec, Sfl_vec, bcs, name)
   [
