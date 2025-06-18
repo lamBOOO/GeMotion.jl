@@ -22,7 +22,7 @@ do_study = haskey(ENV, "GITHUB_ACTIONS") ? true : false
 # (P1)-(L5)-(P2)
 model_square = CartesianDiscreteModel(
   (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) :
-  round.(Int, floor.((61, 61).*sqrt(2)^(i-1)))
+  round.(Int, floor.((61, 61).*sqrt(2)^(5-1)))
 )
 model_squares = [CartesianDiscreteModel(
   (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) :
