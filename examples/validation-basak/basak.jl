@@ -4,6 +4,7 @@ using Makie
 using Gridap
 using Gridap.Arrays  # for "return_cache"
 using CSV, DataFrames
+using Printf
 
 # Setup model
 # (P3)-(L6)-(P4)
@@ -147,14 +148,14 @@ begin
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
     lines!(
       xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs],
-      label="Pr=$(o.Pr), Ra=$(o.Ra)"
+      label="Pr=$(o.Pr), Ra=$((@sprintf "%.0E" o.Ra))"
     )
   end
   map(outs[[8, 10, 13]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
     lines!(
       xs, [evaluate!(cache, o.Nu, Gridap.Point([x, 0])) for x in xs],
-      label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
+      label="Pr=$(o.Pr), Ra=$((@sprintf "%.0E" o.Ra))", linestyle=:dash
     )
   end
   axislegend(
@@ -223,14 +224,14 @@ begin
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
     lines!(
       xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs],
-      label="Pr=$(o.Pr), Ra=$(o.Ra)"
+      label="Pr=$(o.Pr), Ra=$((@sprintf "%.0E" o.Ra))"
     )
   end
   map(outs[[8, 10, 13]]) do o
     cache = return_cache(o.Nu, Gridap.Point(0.0, 0.0))
     lines!(
       xs, -[evaluate!(cache, o.Nu, Gridap.Point([1, x])) for x in xs],
-      label="Pr=$(o.Pr), Ra=$(o.Ra)", linestyle=:dash
+      label="Pr=$(o.Pr), Ra=$((@sprintf "%.0E" o.Ra))", linestyle=:dash
     )
   end
   axislegend(
