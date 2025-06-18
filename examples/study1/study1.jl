@@ -21,7 +21,8 @@ do_study = haskey(ENV, "GITHUB_ACTIONS") ? true : false
 #  |         |
 # (P1)-(L5)-(P2)
 model_square = CartesianDiscreteModel(
-  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) : (200, 200)
+  (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) :
+  round.(Int, floor.((61, 61).*sqrt(2)^(i-1)))
 )
 model_squares = [CartesianDiscreteModel(
   (0, 1, 0, 1), haskey(ENV, "GITHUB_ACTIONS") ? (40, 40) :
@@ -101,7 +102,7 @@ for (i, case) in enumerate(cases)
     name=name*"/Pi",
     contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
     surfaceargs=(;
-      colormap=:coolwarm
+      colormap=:turbo
     )
   ) |> display
   GeMotion.contourplot_unitsquare(;
@@ -135,10 +136,6 @@ end
 if do_study
   begin
     scale = 1.5
-    f = Figure(
-      size=scale .* (600, 250),
-      figure_padding= (0,10,0,0)
-    )
     nplot_Nu = 100
     xs_Nu = LinRange(0.0, 1.0, 2*nplot_Nu)[1:end]
 
@@ -147,46 +144,67 @@ if do_study
       4:6
     ])) do (i_indices, indices)
 
-      ax = Axis(
-        f[1, i_indices],
-        title=i_indices==1 ? "inner wall, uniform heating" : "inner wall, non-uniform heating",
-        xlabel="position x",
-        ylabel="Nusselt number Nu",
-        xminorticksvisible=true,
-        yminorticksvisible=true,
-        xticks=LinearTicks(5),
-        yticks=LinearTicks(5),
-        limits=((0.0, 1.0), (0,20))
-      )
+      map(["left", "bottom"]) do wall
 
-      map(outs1[indices]) do o
-        nb = get_normal_vector(o.btrian)
-        NUU = Interpolable(
-          # get (-dT/dr) with a transformation to polar coordinates
-          (- ∇(o.Th) ⋅ (x->VectorValue([0.0,1.0])));
-            searchmethod=KDTreeSearch(num_nearest_vertices=500)
+
+        f = Figure(
+          size=scale .* (250, 250),
+          figure_padding= (0,10,0,0)
         )
-        cache = return_cache(NUU, Gridap.Point(0.0, 0.0))
-        Nu_inner = [
-          evaluate!(cache, NUU, Gridap.Point([x, 0.0]))
-          for x in xs_Nu
-        ]
-        @info sum(Nu_inner[1:end-1])/length(Nu_inner[1:end-1])
-        lines!(
-          xs_Nu,
-          Nu_inner,
-          label="n = $(o.n)",
+        ax = Axis(
+          f[1, 1],
+          title=(
+            wall * " wall, " * (i_indices==1 ? "uniform heating" : "non-uniform heating")
+          ),
+          xlabel="position " * (wall=="left" ? "y" : "x"),
+          ylabel="Nusselt number Nu",
+          xminorticksvisible=true,
+          yminorticksvisible=true,
+          xticks=LinearTicks(5),
+          yticks=LinearTicks(5),
+          limits=((0.0, 1.0), (0,20))
         )
+
+        map(outs1[indices]) do o
+          nb = get_normal_vector(o.btrian)
+          NUU = Interpolable(
+            # get (-dT/dr) with a transformation to polar coordinates
+            (- ∇(o.Th) ⋅ (
+              wall=="left" ?
+                x->VectorValue([-1.0,0.0]) :
+                x->VectorValue([0.0,1.0])
+            )); searchmethod=KDTreeSearch(num_nearest_vertices=500)
+          )
+          cache = return_cache(NUU, Gridap.Point(0.0, 0.0))
+          Nu = [
+            evaluate!(cache, NUU,
+              wall=="left" ?
+                Gridap.Point([0.0, x]) :
+                Gridap.Point([x, 0.0])
+            )
+            for x in xs_Nu
+          ]
+          @info sum(Nu[1:end-1])/length(Nu[1:end-1])
+          lines!(
+            xs_Nu,
+            Nu,
+            label="n = $(o.n)",
+          )
+          CSV.write("nusselt_number_square_$(wall)_$(i_indices)_$(o.n).csv",
+            DataFrame(pos = xs_Nu, Nu = Nu)
+          )
+        end
+        axislegend(
+          labelsize=10,
+          position=:lt,
+          orientation=:horizontal,
+          nbanks=1,
+        )
+        f |> display
+        save("nusselt_number_square_$(wall)_$(i_indices).pdf", f)
+        # export as CSV
       end
-      axislegend(
-        labelsize=10,
-        position=:lt,
-        orientation=:horizontal,
-        nbanks=1,
-      )
     end
-    f |> display
-    save("nusselt_number_square.pdf", f)
   end
 end
 
@@ -381,7 +399,7 @@ for (i, case) in enumerate(cases)
     fun=out.Pih,
     name=name*"/Pi",
     contourargs=(;levels=[2.0^i for i in -1:1:3]|>x->vcat(-x,x)),
-    surfaceargs=(;colormap=:coolwarm)
+    surfaceargs=(;colormap=:turbo)
   ) |> display
   GeMotion.contourplot_coannulus(
     ;opts...,
@@ -412,60 +430,70 @@ end
 if do_study
   begin
     scale = 1.5
-    f = Figure(
-      size=scale .* (600, 250),
-      figure_padding= (0,10,0,0)
-    )
     nplot_Nu = 100
     phis_Nu = LinRange(0, 2*pi, 2*nplot_Nu)[1:end]
 
     map(enumerate([1:3,4:6])) do (i_indices, indices)
+      map(["inner", "outer"]) do wall
 
-      ax = Axis(
-        f[1, i_indices],
-        title = (
-          "inner wall, $(i_indices == 1 ? "uniform" : "non-uniform") heating"
-        ),
-        xlabel="angle ϕ",
-        ylabel="Nusselt number Nu",
-        xminorticksvisible=true,
-        yminorticksvisible=true,
-        xticks = (0:1/2*pi:2*pi, ["0", "π/2", "π", "3π/2", "2π"]),
-        yticks=LinearTicks(5),
-        limits=((0.0, 2*pi), (-0.5,10.5))
-      )
-
-      map(outs2[indices]) do o
-        nb = get_normal_vector(o.btrian)
-        Nu = Interpolable(
-          # get (-dT/dr) with a transformation to polar coordinates
-          (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
-            searchmethod=KDTreeSearch(num_nearest_vertices=50)
+        f = Figure(
+          size=scale .* (250, 250),
+          figure_padding= (0,11,0,0)
         )
-        cache = return_cache(Nu, Gridap.Point(0.0, 0.0))
-        dist = 0.0
-        ri = 2/3
-        Nu_inner = [
-          evaluate!(
-            cache, Nu, Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)])
+        ax = Axis(
+          f[1, 1],
+          title = (
+            wall * " wall, " * (i_indices==1 ? "uniform" : "non-uniform") *
+            " heating"
+          ),
+          xlabel="angle ϕ",
+          ylabel="Nusselt number Nu",
+          xminorticksvisible=true,
+          yminorticksvisible=true,
+          xticks = (0:1/2*pi:2*pi, ["0", "π/2", "π", "3π/2", "2π"]),
+          yticks=LinearTicks(5),
+          limits=((0.0, 2*pi), (-0.5,13.5))
+        )
+
+        map(outs2[indices]) do o
+          nb = get_normal_vector(o.btrian)
+          Nu = Interpolable(
+            # get (-dT/dr) with a transformation to polar coordinates
+            (- ∇(o.Th) ⋅ (x->VectorValue([x[1],x[2]] / sqrt(x[1]^2 + x[2]^2))));
+              searchmethod=KDTreeSearch(num_nearest_vertices=50)
           )
-          for p in phis_Nu
-        ]
-        lines!(
-          phis_Nu,
-          Nu_inner,
-          label="n = $(o.n)",
+          cache = return_cache(Nu, Gridap.Point(0.0, 0.0))
+          dist = 0
+          ri = 2/3
+          ro = 5/3-0.001
+          Nu = [
+            evaluate!(
+              cache, Nu,
+              wall=="inner" ?
+                Gridap.Point([(ri+dist)*cos(p), (ri+dist)*sin(p)]) :
+                Gridap.Point([(ro-dist)*cos(p), (ro-dist)*sin(p)])
+              )
+            for p in phis_Nu
+          ]
+          lines!(
+            phis_Nu,
+            Nu,
+            label="n = $(o.n)",
+          )
+          CSV.write("nusselt_number_annulus_$(wall)_$(i_indices)_$(o.n).csv",
+            DataFrame(pos = xs_Nu, Nu = Nu)
+          )
+        end
+        axislegend(
+          labelsize=10,
+          position=:lt,
+          orientation=:horizontal,
+          nbanks=1,
         )
+        f |> display
+        save("nusselt_number_annulus_$(wall)_$(i_indices).pdf", f)
       end
-      axislegend(
-        labelsize=10,
-        position=:lt,
-        orientation=:horizontal,
-        nbanks=1,
-      )
     end
-    f |> display
-    save("nusselt_number_annulus.pdf", f)
   end
 end
 
