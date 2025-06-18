@@ -519,7 +519,7 @@ if do_conv_study
     rs = LinRange(ri+epss, ro-epss, n_plot)
     phis = LinRange(0, 2*pi, 2*n_plot-1)
 
-    map(enumerate([1:5])) do (i_indices, indices)
+    map(enumerate([(1:5) .+ (do_study ? 6 : 0)])) do (i_indices, indices)
 
       map(enumerate(outs2[indices])) do (i, o)
 
