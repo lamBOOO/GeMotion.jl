@@ -6,6 +6,8 @@ using Gridap.Arrays
 using GridapGmsh
 using CairoMakie
 using Colors
+using DataFrames
+using CSV
 
 # TODO: Add tests
 
@@ -176,6 +178,9 @@ end
 
 
 begin
+  refdata = CSV.read(
+    "extracted_data-matin_2013/ra_1E4.csv" , DataFrame, header=false
+  )
   f = Figure(
     size=(250, 215), figure_padding=(0, 10, 0, 0),
   )
@@ -188,6 +193,15 @@ begin
   )
   scatterlines!(
     collect(0.6:0.1:1.4), avg_nu_numbers
+  )
+  lines!(
+    refdata[!, 1],
+    refdata[!, 2],
+    # marker=:circle,
+    # markersize=6,
+    # markercolor=(:black, 1.0),
+    color=(:black, 1.0),
+    # strokewidth=0.1,
   )
   display(f)
 end
