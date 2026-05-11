@@ -1,7 +1,7 @@
 name = "GeMotion"
 uuid = "36728288-a4f7-4519-b5c4-8e73b1bcd050"
 authors = ["Lambert Theisen <lambert.theisen@rwth-aachen.de>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
