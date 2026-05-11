@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "Gemotion.jl"
+version: 0.1.0
+license: "MIT"
+type: software
+abstract: "GeMotion.jl is a Julia finite-element solver for steady two-dimensional Navier-Stokes-Fourier natural-convection problems with generalized material laws. It is built on Gridap.jl and supports Cartesian Gridap models as well as named-boundary Gmsh meshes through GridapGmsh.jl."
+message: "If you use this software, please cite it as below."
+authors:
+  - given-names: Lambert
+    family-names: Theisen
+    affiliation: RWTH Aachen University
+    orcid: "https://orcid.org/0000-0001-5460-5425"
+keywords:
+  - "Julia"
+  - "finite element method"
+  - "Navier-Stokes-Fourier equations"
+  - "natural convection"
+  - "generalized material laws"
+  - "Gridap.jl"
+repository-code: "https://github.com/lamBOOO/GeMotion.jl"
