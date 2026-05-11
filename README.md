@@ -7,6 +7,7 @@
   <a href="https://github.com/lamBOOO/GeMotion.jl/actions"><img src="https://github.com/lamBOOO/GeMotion.jl/actions/workflows/test.yml/badge.svg" alt="Testing workflow badge"/></a>
   <a href="https://lambooo.github.io/GeMotion.jl/dev/"><img src="https://img.shields.io/badge/docs-dev-blue.svg" alt="Dev documentation badge"/></a>
   <a href="https://github.com/lamBOOO/GeMotion.jl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/lamBOOO/GeMotion.jl.svg" alt="License badge"/></a>
+  <a href="https://doi.org/10.5281/zenodo.20128603"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20128603.svg" alt="DOI"></a>
 </div>
 
 # GeMotion.jl
